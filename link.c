@@ -35,7 +35,7 @@ void atende(){//atende alarme
 	ALARME_conta++;
 }
 
-void readpacket(int fd,char *buffer,int state, char mode){
+void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
 	int res;
 	//while(state!=4){
@@ -134,16 +134,23 @@ int llopen(int fd, char flag){
 	return 1; 
 	
 }
-int llread(int fd, char *buffer){}
-int llwrite(int fd, char *buffer, int length){}
-int llclose(int fd){}
+int llread(int fd, char *buffer){
+	return 0;
+}
+int llwrite(int fd, char *buffer, int length){
+	
+	return 0;
+}
+int llclose(int fd){
+	return 0;
+}
 
 int main(int argc, char** argv)
 {
-    int fd,c, res,i;
+    int fd;
     struct termios oldtio,newtio;
-    char buf[255];
-	char ch;
+   
+	
 
     if ( (argc < 2) || 
   	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
@@ -189,25 +196,7 @@ int main(int argc, char** argv)
       exit(-1);
     }
 
-    //printf("New termios structure set\n");
-
-    /*READ SERIAL INPUT*
-    i=0;
-    printf("Receiving input...\n");
-    while (STOP==FALSE) {       /* loop for input *
-      res = read(fd,buf +i,1);   /* returns after 5 chars have been input *
-      printf("Res=%d\n", res);
-      if (res){ 
-	if(buf[i]== '\0') STOP=TRUE; 
-	i++;
-	}
-    }
-    printf(":%s:%d\n", buf, i);
-
-    /*SEND CONFIRMATION*
-    printf("Sending confirmation...\n");
-    res = write(fd,buf,i);
-    printf("%d bytes written\n", res);*/
+ 
 
 	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
 	llopen(fd, TRANSMITTER);
