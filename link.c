@@ -199,7 +199,7 @@ int main(int argc, char** argv)
  
 
 	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
-	llopen(fd, TRANSMITTER);
+	llopen(fd, RECEIVER);
 
     sleep(1);
     tcsetattr(fd,TCSANOW,&oldtio);
