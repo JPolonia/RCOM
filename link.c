@@ -186,6 +186,8 @@ int llread(int fd, char *buffer){
 	}
 	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
 	strcpy(buffer, &buff_destuff+4);
+
+	//falta enviar RR
 	return strlen(buffer);
 }
 int llwrite(int fd, char *buffer, int length){
