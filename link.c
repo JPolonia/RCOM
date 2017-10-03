@@ -181,8 +181,12 @@ int llread(int fd, char *buffer){
 		return -1;
 	}
 	tam = destuffing(&buff, &buff_destuff);
-	if(buff_destuff[tam-1])
-	return 0;
+	if(buff_destuff[tam-1]!=xor_result(&buff_destuff+4)) {
+		return -1;  // verificar!!!
+	}
+	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
+	strcpy(buffer, &buff_destuff+4);
+	return strlen(buffer);
 }
 int llwrite(int fd, char *buffer, int length){
 	
