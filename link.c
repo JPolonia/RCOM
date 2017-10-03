@@ -39,7 +39,10 @@ void atende(){//atende alarme
 }
 
 int size_stuffing(char *buff){
-	
+	int i,new_size;
+	for(i=0;i<sizeof(buff);i++){
+		if(buff()	
+	}
 }
 
 void stuffing(char *buff,char *stuffed_buffer){
