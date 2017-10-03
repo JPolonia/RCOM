@@ -172,20 +172,20 @@ int llopen(int fd, char flag){
 	
 }
 int llread(int fd, char *buffer){
-	char buff[MAX_SIZE], buff_destuff[MAX_SIZE];
+	char buff[MAX_SIZE], buff_destuff[MAX_SIZE], RR[5];
 	int tam=0;
 	readpacket(fd, &buff, 1, RECEIVER);
-	if(buff[3]!=(buff[1]^buff[2]){
+	if(buff[3]!=(buff[1]^buff[2])){
 		return -1;
 	}
 	tam = destuffing(&buff, &buff_destuff);
 	if(buff_destuff[tam-1]!=xor_result(&buff_destuff+4)) {
 		return -1;  // verificar!!!
 	}
-	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
+	buff_destuff[tam-2] = ‘\0’;  //para strcpy funcionar
 	strcpy(buffer, &buff_destuff+4);
-
-	//falta enviar RR
+	RR[0]=
+	
 	return strlen(buffer);
 }
 int llwrite(int fd, char *buffer, int length){
