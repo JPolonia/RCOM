@@ -38,6 +38,14 @@ void atende(){//atende alarme
 	ALARME_conta++;
 }
 
+int size_stuffing(char *buff){
+	
+}
+
+void stuffing(char *buff,char *stuffed_buffer){
+	
+}
+
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
 	int res;
@@ -143,6 +151,7 @@ int llread(int fd, char *buffer){
 }
 int llwrite(int fd, char *buffer, int length){
 	
+	res = write(fd,msg,255);
 	return 0;
 }
 int llclose(int fd){
