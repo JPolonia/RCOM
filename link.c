@@ -19,6 +19,8 @@
 #define TRANSMITTER 0x03
 #define RECEIVER 0x01
 
+#define MAX_SIZE 256
+
 #define MAX_tentativas 3
 
 const int FLAG_RCV = 0x7E;
@@ -31,19 +33,43 @@ volatile int STOP=FALSE;
 
 int ALARME_flag=1, ALARME_conta=1;
 
+char xor_result(char *array){
+	char xor;
+	int i=2;
+	xor = array[0] ^ array[1];
+	while(array[i]!='0x7e'){
+		xor = xor ^ array[i];
+		i++;
+	}
+	return xor;
+}
+
+int destuffing(char *buff, char *buff_destuff){
+	int i=4, j=0;
+	while(buff[i]!='0x7E'){
+		if(buff[i]=='0x7d' && buff[i+1]=='0x5e'){
+			buff_destuff[j]='0x7e';
+			i=i+2;
+			j++;		
+		}
+		else if(buff[i]=='0x7d' && buff[i+1]=='0x5d'){
+			buff_destuff[j]='0x7d';
+			i=i+2;
+			j++;		
+		}
+		else{
+			buff_destuff[j]=buff[i];
+			i++;
+			j++;
+		}
+	}
+	return j; 
+}
 
 void atende(){//atende alarme
-	printf("ALARME # %d\n", ALARME_conta);
+	printf("ALARME # %d\n", ALARME_conta+1);
 	ALARME_flag=1;
 	ALARME_conta++;
-}
-
-int size_stuffing(char *buff){
-	
-}
-
-void stuffing(char *buff,char *stuffed_buffer){
-	
 }
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
@@ -69,7 +95,8 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 				} else buffer++;
 				break;
 			case 4: 
-				printf("OK!\n"); 			
+				printf("OK!\n"); 	
+		
 				return;
 		}
 		printf("STATE %d   -  %d Expected: %d  res: %d\n",state,buffer[0],FLAG_RCV,res);
@@ -98,7 +125,7 @@ int llopen(int fd, char flag){
 							msg[4] = FLAG_RCV;
 							ALARME_conta =	0;
 							error = 1;
-							while(ALARME_conta < MAX_tentativas+1 && buff[4] != FLAG_RCV && error){
+							while(ALARME_conta < MAX_tentativas && buff[4] != FLAG_RCV && error){
 								if(ALARME_flag){
 							  		alarm(3); //activa alarme de 3s
 							 		ALARME_flag=0;
@@ -146,12 +173,18 @@ int llopen(int fd, char flag){
 	
 }
 int llread(int fd, char *buffer){
-	
+	char buff[MAX_SIZE], buff_destuff[MAX_SIZE];
+	int tam=0;
+	readpacket(fd, &buff, 1, RECEIVER);
+	if(buff[3]!=(buff[1]^buff[2]){
+		return -1;
+	}
+	tam = destuffing(&buff, &buff_destuff);
+	if(buff_destuff[tam-1])
 	return 0;
 }
 int llwrite(int fd, char *buffer, int length){
 	
-	res = write(fd,msg,255);
 	return 0;
 }
 int llclose(int fd){
@@ -162,8 +195,6 @@ int main(int argc, char** argv)
 {
     int fd;
     struct termios oldtio,newtio;
-    char file_name[] = "test.png";
-    int fd_file;
    
 	
 
@@ -210,16 +241,11 @@ int main(int argc, char** argv)
       perror("tcsetattr");
       exit(-1);
     }
-    
-    /*Open File to be transfered*/
-    fd_file = open(file_name, O_RDONLY);
+
  
 
-    (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
-    llopen(fd, RECEIVER);
-    llwrite(fd, file_name,sizeof(file_name));
-    
-    
+	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+	llopen(fd, TRANSMITTER);
 
     sleep(1);
     tcsetattr(fd,TCSANOW,&oldtio);
