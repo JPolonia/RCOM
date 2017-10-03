@@ -19,6 +19,8 @@
 #define TRANSMITTER 0x03
 #define RECEIVER 0x01
 
+#define MAX_tentativas 3
+
 const int FLAG_RCV = 0x7E;
 const int A = 0x03;
 const int C_SET = 0x03;
@@ -87,7 +89,7 @@ int llopen(int fd, char flag){
 							msg[4] = FLAG_RCV;
 							ALARME_conta =	0;
 							error = 1;
-							while(ALARME_conta < 4 && buff[4] != FLAG_RCV && error){
+							while(ALARME_conta < MAX_tentativas+1 && buff[4] != FLAG_RCV && error){
 								if(ALARME_flag){
 							  		alarm(3); //activa alarme de 3s
 							 		ALARME_flag=0;
@@ -135,6 +137,7 @@ int llopen(int fd, char flag){
 	
 }
 int llread(int fd, char *buffer){
+	
 	return 0;
 }
 int llwrite(int fd, char *buffer, int length){
