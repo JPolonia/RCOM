@@ -31,6 +31,7 @@ volatile int STOP=FALSE;
 
 int ALARME_flag=1, ALARME_conta=1;
 
+
 void atende(){//atende alarme
 	printf("ALARME # %d\n", ALARME_conta);
 	ALARME_flag=1;
@@ -152,6 +153,8 @@ int main(int argc, char** argv)
 {
     int fd;
     struct termios oldtio,newtio;
+    char file_name[] = "test.png";
+    int fd_file;
    
 	
 
@@ -198,11 +201,16 @@ int main(int argc, char** argv)
       perror("tcsetattr");
       exit(-1);
     }
-
+    
+    /*Open File to be transfered*/
+    fd_file = open(file_name, O_RDONLY);
  
 
-	(void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
-	llopen(fd, RECEIVER);
+    (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+    llopen(fd, RECEIVER);
+    llwrite(fd, file_name,sizeof(file_name));
+    
+    
 
     sleep(1);
     tcsetattr(fd,TCSANOW,&oldtio);
