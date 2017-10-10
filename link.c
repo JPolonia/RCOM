@@ -23,12 +23,14 @@
 
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
-const int A = 0x03;
-const int C_SET = 0x03;
-const int C_UA = 0x07;
-
 const int ESCAPE1 = 0x5E;
 const int ESCAPE2 = 0x5D;
+
+const int A = 0x03;
+
+const int C_SET = 0x03;
+const int C_UA = 0x07;
+const int C_I_0 = 0x00;
 
 
 volatile int STOP=FALSE;
@@ -162,10 +164,7 @@ void stuffing(char *buff,char *stuffed_buffer){
 
 	index = 1;
 
-	stuffed_buffer[0] = FLAG_RCV;
-	stuffed_buffer[sizeof(stuffed_buffer)-1] = FLAG_RCV;
-
-	for(i=1;i<sizeof(buff)-1;i++){
+	for(i=0;i<sizeof(buff);i++){
 		stuffed_buffer[i] = buff[i];
 		if(buff[i] == FLAG_RCV){
 			stuffed_buffer[index] = ESCAPE;
@@ -179,16 +178,37 @@ void stuffing(char *buff,char *stuffed_buffer){
 }
 
 int llwrite(int fd, char *buffer, int length){
-	int res,new_size = size_stuffing(buffer);
+	int i,res,new_size;
 	char RR[255];
+	char BCC2 = buffer[0];
+	char *stuffed_buffer;
+	char *trama;
 
 	//Calc BCC2
+	for(i=1;i<length;i++){
+		BCC2 ^= buffer[i];
+	}
 
-	//Stuffing da trama
-	char *stuffed_buffer;
-	stuffed_buffer = (char *) malloc(sizeof(char *) * new_size);
-	stuffing(buffer, stuffed_buffer);
+	//Realloc buffer to add BCC2
+	buffer = (char *) realloc(buffer,length+1);
+	buffer[length] = BCC2;
 	
+	//Stuffing da trama + BCC2
+	new_size = size_stuffing(buffer);
+	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
+	stuffing(buffer,stuffed_buffer);
+
+	//Encapsulamento da trama: F + A + C + BCC + buffer + F
+	new_size = sizeof(stuffed_buffer) + 5;
+	trama = (char *) malloc(sizeof(char *) * new_size);
+	trama[0] = FLAG_RCV;
+	trama[1] = A;
+	trama[2] = C_I_0;
+	trama[3] = trama[1]^trama[2];
+	//strncpy(dest, src + beginIndex, endIndex - beginIndex);
+	strcpy(trama + 4,stuffed_buffer);
+	trama[new_size-1] = FLAG_RCV;
+
 	/*Envia trama TRAMA I*/							
 	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
 	printf("%d bytes sent\n",res);
