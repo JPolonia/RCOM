@@ -35,7 +35,7 @@ const int C_I_1 = 0x40;
 
 
 volatile int STOP=FALSE;
-volatile int SNQNUM=C_I_0;
+volatile int SNQNUM = 0;
 
 int ALARME_flag=1, ALARME_conta=1;
 
@@ -220,7 +220,7 @@ int llwrite(int fd, char *buffer, int length){
 	readpacket(fd,RR,255,TRANSMITTER);
 	//Verificar RR
 
-	SNQNUM = (SQNUM) ? 0 : 1;		
+	SNQNUM = (SNQNUM) ? 0 : 1;		
 
 	return 0;
 }
