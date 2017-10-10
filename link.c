@@ -22,9 +22,13 @@
 #define MAX_tentativas 3
 
 const int FLAG_RCV = 0x7E;
+const int ESCAPE = 0x7D;
 const int A = 0x03;
 const int C_SET = 0x03;
 const int C_UA = 0x07;
+
+const int ESCAPE1 = 0x5E;
+const int ESCAPE2 = 0x5D;
 
 
 volatile int STOP=FALSE;
@@ -38,16 +42,9 @@ void atende(){//atende alarme
 	ALARME_conta++;
 }
 
-int size_stuffing(char *buff){
-	int i,new_size;
-	for(i=0;i<sizeof(buff);i++){
-		if(buff()	
-	}
-}
 
-void stuffing(char *buff,char *stuffed_buffer){
-	
-}
+
+
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
@@ -149,12 +146,56 @@ int llopen(int fd, char flag){
 	
 }
 int llread(int fd, char *buffer){
-	
-	return 0;
+
 }
+
+int size_stuffing(char *buff){
+	int i,new_size=0;
+	for(i=1;i<sizeof(buff)-1;i++){
+		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
+	}
+	return sizeof(buff) + new_size;
+}
+
+void stuffing(char *buff,char *stuffed_buffer){
+	int i,index;
+
+	index = 1;
+
+	stuffed_buffer[0] = FLAG_RCV;
+	stuffed_buffer[sizeof(stuffed_buffer)-1] = FLAG_RCV;
+
+	for(i=1;i<sizeof(buff)-1;i++){
+		stuffed_buffer[i] = buff[i];
+		if(buff[i] == FLAG_RCV){
+			stuffed_buffer[index] = ESCAPE;
+			stuffed_buffer[++index]	= ESCAPE1;
+		}
+		if(buff[i] == ESCAPE){
+			stuffed_buffer[index] = ESCAPE;
+			stuffed_buffer[++index]	= ESCAPE2;
+		}
+	}	 
+}
+
 int llwrite(int fd, char *buffer, int length){
+	int res,new_size = size_stuffing(buffer);
+	char RR[255];
+
+	//Calc BCC2
+
+	//Stuffing da trama
+	char *stuffed_buffer;
+	stuffed_buffer = (char *) malloc(sizeof(char *) * new_size);
+	stuffing(buffer, stuffed_buffer);
 	
-	res = write(fd,msg,255);
+	/*Envia trama TRAMA I*/							
+	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
+	printf("%d bytes sent\n",res);
+
+	/*Espera pela resposta RR*/				
+	readpacket(fd,RR,255,TRANSMITTER);		
+
 	return 0;
 }
 int llclose(int fd){
