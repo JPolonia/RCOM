@@ -27,16 +27,31 @@ const int A = 0x03;
 const int C_SET = 0x03;
 const int C_UA = 0x07;
 
+typedef struct linklayer {
+	char port[20];
+	int baudRate;
+	unsigned int sequenceNumber;
+	unsigned int timeout;
+	unsigned int numTransmissions;
+	char frame[MAX_SIZE];
+} linklayer;
+
+linklayer ll = { "/dev/ttyS0", BAUDRATE, 0, 3, 3 }
+
+
+
 
 volatile int STOP=FALSE;
 
 int ALARME_flag=1, ALARME_conta=1;
 
-char xor_result(char *array){
+char xor_result(char *array, int tam){
 	char xor;
 	int i=2;
+
 	xor = array[0] ^ array[1];
-	while(array[i]!='0x7e'){
+
+	for(i=2; i<tam-1; i++){
 		xor = xor ^ array[i];
 		i++;
 	}
@@ -172,19 +187,42 @@ int llopen(int fd, char flag){
 	
 }
 int llread(int fd, char *buffer){
-	char buff[MAX_SIZE], buff_destuff[MAX_SIZE], RR[5];
+	char buff[MAX_SIZE], buff_destuff[MAX_SIZE], RR[5], REJ[5];
 	int tam=0;
 	readpacket(fd, &buff, 1, RECEIVER);
 	if(buff[3]!=(buff[1]^buff[2])){
 		return -1;
 	}
+	if( buff[2]==0x00 && ll.sequenceNumber==1 ){
+		RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+		write(fd, RR, 5);
+		return -1;
+	}
+		
+	if(buff[2]==0x40 && ll.sequenceNumber==0){
+		RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+		write(fd, RR, 5);
+		return -1;
+	}
 	tam = destuffing(&buff, &buff_destuff);
-	if(buff_destuff[tam-1]!=xor_result(&buff_destuff+4)) {
+	if(buff_destuff[tam-1]!=xor_result(&buff_destuff, tam)) {
+		//REG
 		return -1;  // verificar!!!
 	}
-	buff_destuff[tam-2] = ‘\0’;  //para strcpy funcionar
+	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
 	strcpy(buffer, &buff_destuff+4);
+
 	//RR[0]= enviar rr
+	if( buff[2]==0x00){
+		ll.sequenceNumber=1;
+		RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+		write(fd, RR, 5);
+	}
+	else if(buff[2]==0x40){
+		ll.sequenceNumber=0;
+		RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+		write(fd, RR, 5);
+	}
 	
 	return strlen(buffer);
 }
