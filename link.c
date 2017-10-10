@@ -31,9 +31,11 @@ const int A = 0x03;
 const int C_SET = 0x03;
 const int C_UA = 0x07;
 const int C_I_0 = 0x00;
+const int C_I_1 = 0x40;
 
 
 volatile int STOP=FALSE;
+volatile int SNQNUM=C_I_0;
 
 int ALARME_flag=1, ALARME_conta=1;
 
@@ -203,7 +205,7 @@ int llwrite(int fd, char *buffer, int length){
 	trama = (char *) malloc(sizeof(char *) * new_size);
 	trama[0] = FLAG_RCV;
 	trama[1] = A;
-	trama[2] = C_I_0;
+	trama[2] = (SNQNUM) ? C_I_1 : C_I_0;
 	trama[3] = trama[1]^trama[2];
 	//strncpy(dest, src + beginIndex, endIndex - beginIndex);
 	strcpy(trama + 4,stuffed_buffer);
@@ -212,9 +214,13 @@ int llwrite(int fd, char *buffer, int length){
 	/*Envia trama TRAMA I*/							
 	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
 	printf("%d bytes sent\n",res);
+	
 
 	/*Espera pela resposta RR*/				
-	readpacket(fd,RR,255,TRANSMITTER);		
+	readpacket(fd,RR,255,TRANSMITTER);
+	//Verificar RR
+
+	SNQNUM = (SQNUM) ? 0 : 1;		
 
 	return 0;
 }
