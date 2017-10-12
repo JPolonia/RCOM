@@ -38,12 +38,11 @@ typedef struct linklayer {
 
 linklayer ll = { "/dev/ttyS0", BAUDRATE, 0, 3, 3 }
 
-
-
-
 volatile int STOP=FALSE;
 
 int ALARME_flag=1, ALARME_conta=1;
+
+
 
 char xor_result(char *array, int tam){
 	char xor;
@@ -57,6 +56,8 @@ char xor_result(char *array, int tam){
 	}
 	return xor;
 }
+
+
 
 int destuffing(char *buff, char *buff_destuff){
 	int i=4, j=0;
@@ -80,11 +81,15 @@ int destuffing(char *buff, char *buff_destuff){
 	return j; 
 }
 
+
+
 void atende(){//atende alarme
 	printf("ALARME # %d\n", ALARME_conta+1);
 	ALARME_flag=1;
 	ALARME_conta++;
 }
+
+
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
@@ -121,6 +126,8 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//}
 	readpacket(fd,buffer,state,mode);
 }
+
+
 
 int llopen(int fd, char flag){
 	
@@ -186,46 +193,83 @@ int llopen(int fd, char flag){
 	return 1; 
 	
 }
-int llread(int fd, char *buffer){
-	char buff[MAX_SIZE], buff_destuff[MAX_SIZE], RR[5], REJ[5];
-	int tam=0;
-	readpacket(fd, &buff, 1, RECEIVER);
-	if(buff[3]!=(buff[1]^buff[2])){
-		return -1;
-	}
-	if( buff[2]==0x00 && ll.sequenceNumber==1 ){
-		RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
-		write(fd, RR, 5);
-		return -1;
-	}
-		
-	if(buff[2]==0x40 && ll.sequenceNumber==0){
-		RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
-		write(fd, RR, 5);
-		return -1;
-	}
-	tam = destuffing(&buff, &buff_destuff);
-	if(buff_destuff[tam-1]!=xor_result(&buff_destuff, tam)) {
-		//REG
-		return -1;  // verificar!!!
-	}
-	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
-	strcpy(buffer, &buff_destuff+4);
 
-	//RR[0]= enviar rr
-	if( buff[2]==0x00){
-		ll.sequenceNumber=1;
-		RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
-		write(fd, RR, 5);
-	}
-	else if(buff[2]==0x40){
-		ll.sequenceNumber=0;
-		RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
-		write(fd, RR, 5);
-	}
+
+
+int llread(int fd, char *buffer){
 	
+	char buff[MAX_SIZE], buff_destuff[MAX_SIZE], RR[5], REJ[5];
+	int tam=0, state=1;
+	
+	while(state!=7){
+		switch(state){
+			case'1':	readpacket(fd, &buff, 1, RECEIVER);
+						state=2;
+
+			
+			case'2':	if(buff[3]!=(buff[1]^buff[2])){
+							state=1;
+							break;
+							}
+						else {
+							state=3;
+							break;
+							}	
+			case'3':	if( buff[2]==0x00 && ll.sequenceNumber==1 ){
+							RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+							write(fd, RR, 5);
+							state=1;
+							break;
+							}
+						else { 
+							state=4;
+							break;
+						}
+				
+			case'4':	if(buff[2]==0x40 && ll.sequenceNumber==0){
+							RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+							write(fd, RR, 5);
+							state=1;
+							break;
+							}
+						else {
+							state=5;
+							break;
+						}
+
+			case'5':	tam = destuffing(&buff, &buff_destuff);
+						if(buff_destuff[tam-1]!=xor_result(&buff_destuff, tam)) {
+							//REG
+							state=1;  // verificar!!!
+							}
+						else state=6;
+						break;
+			case'6':	buff_destuff[tam-1] = ‘\0’;  //para strcpy funcionar
+						strcpy(buffer, &buff_destuff+4);
+						//RR[0]= enviar rr
+						if( buff[2]==0x00){
+							ll.sequenceNumber=1;
+							RR = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+							write(fd, RR, 5);
+							state=1;
+							}
+						else if(buff[2]==0x40){
+							ll.sequenceNumber=0;
+							RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+							write(fd, RR, 5);
+							state=1;
+						}
+						else state=7;
+						break;
+			case'7':	printf("Read OK!");
+			}
+		}
+
+
 	return strlen(buffer);
 }
+
+
 int llwrite(int fd, char *buffer, int length){
 	
 	return 0;
