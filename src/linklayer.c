@@ -1,26 +1,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <termios.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
 
+#include "linklayer.h"
 #include "alarm.h"
-
-#define BAUDRATE B38400
-#define _POSIX_SOURCE 1 /* POSIX compliant source */
-#define FALSE 0
-#define TRUE 1
-
-#define TRANSMITTER 0x03
-#define RECEIVER 0x01
-
-#define MAX_SIZE 256
-#define MAX_TRIES 3
-#define TIMEOUT 3
 
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
@@ -34,40 +23,15 @@ const int C_UA = 0x07;
 const int C_I_0 = 0x00;
 const int C_I_1 = 0x40;
 
-
 volatile int STOP=FALSE;
 volatile int SNQNUM = 0;
 
-typedef struct linkLayer {
-	char port[20]; //Port /dev/ttySx
-	int baudRate; //Transmission speed
-	unsigned int sequenceNumber; //Frame sequence number (0, 1)
-	unsigned int timeout; //Valor do temporizador
-	unsigned int numTransmissions; //Numero Tentativas em caso de falha
-	char frame[MAX_SIZE]; //Trama
-} linkLayer;
-
-/*typedef enum {
-	C_SET = 0x03, C_UA = 0x07, C_RR = 0x05, C_REJ = 0x01, C_DISC = 0x0B
-} ControlField;
-
-typedef enum {
-	A_TX = 0x03, A_RX = 0x01
-} AdressField;
-
-typedef struct SUframe {
-	char F;
-	AdressField A;
-	ControlField C;
-	char BCC;
-} SUFrame;
-
-typedef struct Iframe {
-	struct SUframe;
-	char* Payload;
-} IFrame;*/	
-
 linkLayer* ll;
+
+/*int initLinkLayer(){
+	
+}*/
+
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
@@ -243,86 +207,4 @@ int llwrite(int fd, char *buffer, int length){
 }
 int llclose(int fd){
 	return 0;
-}
-
-
-
-int main(int argc, char** argv)
-{
-    int fd;
-    struct termios oldtio,newtio;
-    char file_name[] = "test.png";
-    int fd_file;   
-	
-
-    if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
-      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-      exit(1);
-    }
-
-
-	//Initialize linkLayer
-	ll = (linkLayer*) malloc(sizeof(linkLayer));
-	strcpy(ll->port, argv[1]);
-	ll->baudRate = BAUDRATE;
-	ll->sequenceNumber = 0;
-	ll->timeout = TIMEOUT;
-	ll->numTransmissions = MAX_TRIES;
-
-
-
-  /*
-    Open serial port device for reading and writing and not as controlling tty
-    because we don't want to get killed if linenoise sends CTRL-C.
-  */    
-    fd = open(ll->port, O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(ll->port); exit(-1); }
-
-
-    if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
-      perror("tcgetattr");
-      exit(-1);
-    }
-
-    bzero(&newtio, sizeof(newtio));
-    newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-    newtio.c_iflag = IGNPAR;
-    newtio.c_oflag = 0;
-
-    /* set input mode (non-canonical, no echo,...) */
-    newtio.c_lflag = 0;
-
-    newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-    newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
-
-  /* 
-    VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
-    leitura do(s) próximo(s) caracter(es)
-  */
-
-    tcflush(fd, TCIOFLUSH);
-
-    if ( tcsetattr(fd,TCSANOW,&newtio) == -1) {
-      perror("tcsetattr");
-      exit(-1);
-    }
-    
-    /*Open File to be transfered*/
-    //fd_file = open(file_name, O_RDONLY);
- 
-
-    //Initialize alarm
-	initAlarm();
-
-    llopen(fd, RECEIVER);
-    //llwrite(fd, file_name,sizeof(file_name));
-    
-    
-
-    sleep(1);
-    tcsetattr(fd,TCSANOW,&oldtio);
-    close(fd);
-    return 0;
 }
