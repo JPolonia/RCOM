@@ -14,7 +14,7 @@ int numberOfOctets(int number){
         number >>= 8;
         n ++;
     }
-    
+    return n;
 }
 
 int controlPacket(char *buffer, int fileSize, char *fileName, char C){
@@ -30,13 +30,13 @@ int controlPacket(char *buffer, int fileSize, char *fileName, char C){
     buffer[i] = 0x00; //file size flag
     i++;
     
-    buffer[i] = (char*) numberOfOctets(fileSize); //file size number of bytes
+    buffer[i] = (char) numberOfOctets(fileSize); //file size number of bytes
     i++;
     
     exp = 0;
     sum = 0;
     for(j = 0 ; j < numberOfOctets(fileSize) ; j++){
-        buffer[i] = (char*) (fileSize & (2^(exp+8) - sum)) >> exp;// anda de 8 em 8 bits e arrasta para a direita;
+        buffer[i] = (char)( (fileSize & (2^(exp+8) - sum)) >> exp);// anda de 8 em 8 bits e arrasta para a direita;
         exp = exp + 8;
         i++;
         sum = sum + 2^exp;
@@ -45,7 +45,7 @@ int controlPacket(char *buffer, int fileSize, char *fileName, char C){
     buffer[i] = 0x01; //file name flag
     i++;
     
-    buffer[i] = (char*) strlen(fileName);
+    buffer[i] = (char) strlen(fileName);
     i++;
     
     for(j = 0; j < strlen(fileName); j++){
@@ -73,7 +73,7 @@ int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){
     buffer[i] = 0x01; //data control flag C
     i++;
     
-    buffer[i] = (char*) seqNumber; //Sequence Number N
+    buffer[i] = (char) seqNumber; //Sequence Number N
     i++;
     
     buffer[i] = tamanho >> 8;  //L2
@@ -85,12 +85,7 @@ int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){
         buffer[i] = data[j];
         i++;
     }
-    
-}
-
-int main(){
-    
-    
+    return i;
 }
 
 
