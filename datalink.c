@@ -1,6 +1,3 @@
-/*Non-Canonical Input Processing*/
-
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -11,6 +8,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include "alarm.h"
+
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -19,7 +18,9 @@
 #define TRANSMITTER 0x03
 #define RECEIVER 0x01
 
-#define MAX_tentativas 3
+#define MAX_SIZE 256
+#define MAX_TRIES 3
+#define TIMEOUT 3
 
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
@@ -37,18 +38,36 @@ const int C_I_1 = 0x40;
 volatile int STOP=FALSE;
 volatile int SNQNUM = 0;
 
-int ALARME_flag=1, ALARME_conta=1;
+typedef struct linkLayer {
+	char port[20]; //Port /dev/ttySx
+	int baudRate; //Transmission speed
+	unsigned int sequenceNumber; //Frame sequence number (0, 1)
+	unsigned int timeout; //Valor do temporizador
+	unsigned int numTransmissions; //Numero Tentativas em caso de falha
+	char frame[MAX_SIZE]; //Trama
+} linkLayer;
 
+/*typedef enum {
+	C_SET = 0x03, C_UA = 0x07, C_RR = 0x05, C_REJ = 0x01, C_DISC = 0x0B
+} ControlField;
 
-void atende(){//atende alarme
-	printf("ALARME # %d\n", ALARME_conta);
-	ALARME_flag=1;
-	ALARME_conta++;
-}
+typedef enum {
+	A_TX = 0x03, A_RX = 0x01
+} AdressField;
 
+typedef struct SUframe {
+	char F;
+	AdressField A;
+	ControlField C;
+	char BCC;
+} SUFrame;
 
+typedef struct Iframe {
+	struct SUframe;
+	char* Payload;
+} IFrame;*/	
 
-
+linkLayer* ll;
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
 	//int c=100;
@@ -78,7 +97,7 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 		}
 		printf("STATE %d   -  %d Expected: %d  res: %d\n",state,buffer[0],FLAG_RCV,res);
 		
-	if(ALARME_flag && (mode==TRANSMITTER) ){ 		
+	if(alarmFlag && (mode==TRANSMITTER) ){ 		
 		return;
 	}
 	//}
@@ -92,20 +111,21 @@ int llopen(int fd, char flag){
 	int error;
 	int res;
 
+	msg[0] = FLAG_RCV;
+	msg[1] = A;
+	msg[4] = FLAG_RCV;
+	
 	printf("*** Trying to establish a connection. ***\n");
 	switch(flag){
 		case TRANSMITTER:   printf("TRANSMISTTER\n");
-							msg[0] = FLAG_RCV;
-							msg[1] = A;
 							msg[2] = C_SET;
 							msg[3] = A^C_SET;
-							msg[4] = FLAG_RCV;
-							ALARME_conta =	0;
+							alarmCounter =	0;
 							error = 1;
-							while(ALARME_conta < MAX_tentativas+1 && buff[4] != FLAG_RCV && error){
-								if(ALARME_flag){
-							  		alarm(3); //activa alarme de 3s
-							 		ALARME_flag=0;
+							while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+								if(alarmFlag){
+							  		alarm(ll->timeout); //activa alarme de 3s
+							 		alarmFlag=0;
 								}
 								/*Envia trama SET*/							
 								res = write(fd,msg,5);
@@ -114,11 +134,9 @@ int llopen(int fd, char flag){
 								readpacket(fd,buff,1,TRANSMITTER);
 								error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
 								
-							}
-													
-							
-							
+							}							
 							break;
+
 		case RECEIVER: 		printf("RECEIVER\n");
 							/*Espera pela trama SET*/
 							readpacket(fd,buff,1,RECEIVER);
@@ -126,14 +144,12 @@ int llopen(int fd, char flag){
 							if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
 							else {
 								/*Envia resposta UA*/
-								msg[0] = FLAG_RCV;
-								msg[1] = A;
 								msg[2] = C_UA;
 								msg[3] = A^C_UA;
-								msg[4] = FLAG_RCV;
 								res = write(fd,msg,5);
 								printf("%d bytes sent\n",res);}
 							break;
+
 		default: 		
 							return -1;
 	}
@@ -149,6 +165,7 @@ int llopen(int fd, char flag){
 	return 1; 
 	
 }
+
 int llread(int fd, char *buffer){
 
 }
@@ -186,39 +203,39 @@ int llwrite(int fd, char *buffer, int length){
 	char *stuffed_buffer;
 	char *trama;
 
-	//Calc BCC2
+	// Calc BCC2
 	for(i=1;i<length;i++){
 		BCC2 ^= buffer[i];
 	}
 
-	//Realloc buffer to add BCC2
-	buffer = (char *) realloc(buffer,length+1);
-	buffer[length] = BCC2;
-	
-	//Stuffing da trama + BCC2
-	new_size = size_stuffing(buffer);
-	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
-	stuffing(buffer,stuffed_buffer);
-
-	//Encapsulamento da trama: F + A + C + BCC + buffer + F
-	new_size = sizeof(stuffed_buffer) + 5;
-	trama = (char *) malloc(sizeof(char *) * new_size);
+	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
+	trama = (char *) malloc(sizeof(char *) * length + 6);
 	trama[0] = FLAG_RCV;
 	trama[1] = A;
 	trama[2] = (SNQNUM) ? C_I_1 : C_I_0;
 	trama[3] = trama[1]^trama[2];
-	//strncpy(dest, src + beginIndex, endIndex - beginIndex);
-	strcpy(trama + 4,stuffed_buffer);
-	trama[new_size-1] = FLAG_RCV;
+	memcpy(trama + 4,buffer,length); //strncpy(dest, src + beginIndex, endIndex - beginIndex);
+	trama[length + 4] = BCC2;
+	trama[length + 5] = FLAG_RCV;
+	
+	// Stuffing da trama
+	new_size = size_stuffing(buffer);
+	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
+	stuffing(buffer,stuffed_buffer);
 
-	/*Envia trama TRAMA I*/							
+	/* Envia trama TRAMA I*/							
 	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
 	printf("%d bytes sent\n",res);
-	
 
-	/*Espera pela resposta RR*/				
-	readpacket(fd,RR,255,TRANSMITTER);
-	//Verificar RR
+	/* Free Memmory*/
+	//free(trama);
+	//free(stuffed_buffer);
+	
+	/* Espera pela resposta RR*/				
+	//readpacket(fd,RR,255,TRANSMITTER);
+	
+	// Verificar RR
+
 
 	SNQNUM = (SNQNUM) ? 0 : 1;		
 
@@ -228,13 +245,14 @@ int llclose(int fd){
 	return 0;
 }
 
+
+
 int main(int argc, char** argv)
 {
     int fd;
     struct termios oldtio,newtio;
     char file_name[] = "test.png";
-    int fd_file;
-   
+    int fd_file;   
 	
 
     if ( (argc < 2) || 
@@ -245,13 +263,23 @@ int main(int argc, char** argv)
     }
 
 
+	//Initialize linkLayer
+	ll = (linkLayer*) malloc(sizeof(linkLayer));
+	strcpy(ll->port, argv[1]);
+	ll->baudRate = BAUDRATE;
+	ll->sequenceNumber = 0;
+	ll->timeout = TIMEOUT;
+	ll->numTransmissions = MAX_TRIES;
+
+
+
   /*
     Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.
-  */
-    
-    fd = open(argv[1], O_RDWR | O_NOCTTY );
-    if (fd <0) {perror(argv[1]); exit(-1); }
+  */    
+    fd = open(ll->port, O_RDWR | O_NOCTTY );
+    if (fd <0) {perror(ll->port); exit(-1); }
+
 
     if ( tcgetattr(fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");
@@ -282,12 +310,14 @@ int main(int argc, char** argv)
     }
     
     /*Open File to be transfered*/
-    fd_file = open(file_name, O_RDONLY);
+    //fd_file = open(file_name, O_RDONLY);
  
 
-    (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+    //Initialize alarm
+	initAlarm();
+
     llopen(fd, RECEIVER);
-    llwrite(fd, file_name,sizeof(file_name));
+    //llwrite(fd, file_name,sizeof(file_name));
     
     
 
