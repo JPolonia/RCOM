@@ -81,7 +81,7 @@ int endPacket(char *buffer, int fileSize, char *fileName){  //funciona
     return controlPacket(buffer, fileSize, fileName, 0x03);
 }
 
-int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){
+int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){ //falta verificar
     int i = 0;
     int j = 0;
     
@@ -116,9 +116,17 @@ size_t sendData(FILE *file, int fd){ //funciona
     char buffer[MAX_SIZE];
     size_t bytesRead = 0;
     size_t total = 0;
+    
+    int seqNumber = 0;
+    
     while(bytesRead = fread(buffer, 1, MAX_SIZE-1, file), bytesRead != 0){
+        
+        //falta chamar dataPacket()
+        
+        
         //llwrite(fd, buffer, bytesRead); //retirar quando juntar código
         total = total + bytesRead;
+        seqNumber++;
     }
     return total;
 }
@@ -126,11 +134,6 @@ size_t sendData(FILE *file, int fd){ //funciona
 void closeFile(FILE *file){
     fclose(file);
 }
-
-
-
-
-
     
     
     
