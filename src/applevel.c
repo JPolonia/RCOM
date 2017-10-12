@@ -8,7 +8,7 @@
 #define FALSE 0
 #define TRUE 1
 
-#define MAX_SIZE 256
+#define MAX_SIZE 10
 
 int int_pow(int base, int exp){ // funciona
     int result = 1;
@@ -103,7 +103,7 @@ int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){
     return i;
 }
 
-FILE *openFile(char *pathToFile){ //falta verificar
+FILE *openFile(char *pathToFile){ //funciona
     FILE *file = fopen(pathToFile, "rb");
     if (file == NULL) {
         printf("Erro ao abrir ficheiro\n");
@@ -112,12 +112,12 @@ FILE *openFile(char *pathToFile){ //falta verificar
     return file;
 }
 
-size_t sendData(FILE *file, int fd){ //falta verificar
+size_t sendData(FILE *file, int fd){ //funciona
     char buffer[MAX_SIZE];
     size_t bytesRead = 0;
     size_t total = 0;
-    while(bytesRead = fread(buffer, 1, MAX_SIZE, file), bytesRead != 0){
-        //llwrite(fd, buffer, bytesRead);
+    while(bytesRead = fread(buffer, 1, MAX_SIZE-1, file), bytesRead != 0){
+        //llwrite(fd, buffer, bytesRead); //retirar quando juntar código
         total = total + bytesRead;
     }
     return total;
@@ -126,6 +126,9 @@ size_t sendData(FILE *file, int fd){ //falta verificar
 void closeFile(FILE *file){
     fclose(file);
 }
+
+
+
 
 
     
