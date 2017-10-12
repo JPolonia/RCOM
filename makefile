@@ -8,11 +8,11 @@ CCFLAGS = -g -O3 -Wall
 LDFLAGS = -g
 
 # source files
-SRC = $(wildcard *.c)
+SRC = $(wildcard src/*.c)
 
 OBJ = $(patsubst src%, buildtemp%.o, $(SRC))
 
-OUT = serial
+OUT = bin/serial
 
 .SUFFIXES: .c
 
@@ -23,6 +23,7 @@ buildtemp/%.o: src/%
 	$(CCC) $(INCLUDES) $(CCFLAGS) -c $< -o $@
 
 $(OUT): $(OBJ)
+	mkdir -p bin
 	$(CCC) $(INCLUDES) $(CCFLAGS) $(OBJ) $(LIBS) -o $(OUT)
 
 clean:
