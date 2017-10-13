@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     switch(mode){
         case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
                           break;
-        case RECEIVER:    llread(fd,read_str)
+        case RECEIVER:    llread(fd,read_str);
                           printf("STR: %s \n",read_str);
                           break;
       }
