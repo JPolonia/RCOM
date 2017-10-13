@@ -99,7 +99,7 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 				break;
 			case 2: res = read(fd,buffer,1);
 
-				if (((*buffer)!=FLAG_RCV) && res){
+				if (((*buffer)!= FLAG_RCV) && res){
 					buffer++;
 					state = 3;
 				}			
