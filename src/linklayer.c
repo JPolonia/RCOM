@@ -297,7 +297,7 @@ int size_stuffing(char *buff, int length){
 	for(i=1;i<length-1;i++){
 		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
 	}
-	return sizeof(buff) + new_size;
+	return length + new_size;
 }
 
 void stuffing(char *buff,char *stuffed_buffer){
