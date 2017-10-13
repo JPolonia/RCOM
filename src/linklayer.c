@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <termios.h>
+
 
 #include "linklayer.h"
 #include "alarm.h"
@@ -29,9 +29,6 @@ volatile int STOP=FALSE;
 volatile int SNQNUM = 0;
 
 linkLayer* ll;
-
-int destuffing(char *buff, char *buff_destuff);
-char xor_result(char *array, int tam);
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 				  unsigned int timeout,unsigned int numTransmissions){
@@ -55,7 +52,8 @@ int openSerialPort(char* port){
 
 int closeSerialPort( int fd){
 	tcsetattr(fd,TCSANOW,&ll->oldtio);
-    close(fd);
+	close(fd);
+	return 1;
 }
 
 int initTermios(int fd){
@@ -222,7 +220,7 @@ char xor_result(char *array, int tam){
 
 int llread(int fd, char *buffer){
 
-	char buff[MAX_SIZE];
+	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
 	int tam=0, state=1;
@@ -241,7 +239,7 @@ int llread(int fd, char *buffer){
 							state=3;
 							break;
 							}	
-			case'3':	if( buff[2]==0x00 && ll.sequenceNumber==1 ){
+			case'3':	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
 							write(fd, RR, 5);
 							state=1;
 							break;
@@ -250,7 +248,7 @@ int llread(int fd, char *buffer){
 							state=4;
 							break;
 						}
-			case'4':	if(buff[2]==0x40 && ll.sequenceNumber==0){
+			case'4':	if(buff[2]==0x40 && ll->sequenceNumber==0){
 								//RR = {0x7E, 0x03, 0x21, , 0x7E};
 							RR[2]=0x21;
 			    				RR[3]=0x03^0x21;
@@ -273,12 +271,12 @@ int llread(int fd, char *buffer){
 						strcpy(buffer, buff_destuff+4);
 						//RR[0]= enviar rr
 						if( buff[2]==0x00){
-							ll.sequenceNumber=1;
+							ll->sequenceNumber=1;
 							write(fd, RR, 5);
 							state=1;
 							}
 						else if(buff[2]==0x40){
-							ll.sequenceNumber=0;
+							ll->sequenceNumber=0;
 							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
 			    				RR[2]=0x21;
 			    				RR[3]=0x03^0x21;

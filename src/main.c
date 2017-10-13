@@ -8,9 +8,7 @@
 #include "linklayer.h"
 #include "alarm.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+
 
 #define BAUDRATE B38400
 

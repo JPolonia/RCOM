@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <termios.h>
+
 #define MAX_SIZE 256
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
@@ -24,32 +26,17 @@ typedef struct linkLayer {
 
 extern linkLayer* ll;
 
-/*typedef enum {
-	C_SET = 0x03, C_UA = 0x07, C_RR = 0x05, C_REJ = 0x01, C_DISC = 0x0B
-} ControlField;
-
-typedef enum {
-	A_TX = 0x03, A_RX = 0x01
-} AdressField;gi
-
-typedef struct SUframe {
-	char F;
-	AdressField A;
-	ControlField C;
-	char BCC;
-} SUFrame;
-
-typedef struct Iframe {
-	struct SUframe;
-	char* Payload;
-} IFrame;*/	
-
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 	unsigned int timeout,unsigned int numTransmissions);
+int openSerialPort(char* port);
+int closeSerialPort( int fd);
+int initTermios(int fd);
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode);
 int llopen(int fd, char flag);
 int llread(int fd, char *buffer);
+int destuffing(char *buff, char *buff_destuff);
+char xor_result(char *array, int tam);
 int size_stuffing(char *buff);
 void stuffing(char *buff,char *stuffed_buffer);
 int llwrite(int fd, char *buffer, int length);
