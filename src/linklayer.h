@@ -38,7 +38,7 @@ int llread(int fd, char *buffer);
 int destuffing(char *buff, char *buff_destuff);
 char xor_result(char *array, int tam);
 int size_stuffing(char *buff, int length);
-void stuffing(char *buff,char *stuffed_buffer);
+void stuffing(char *buff,char *stuffed_buffer, int length);
 int llwrite(int fd, char *buffer, int length);
 int llclose(int fd);
 

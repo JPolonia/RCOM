@@ -300,12 +300,12 @@ int size_stuffing(char *buff, int length){
 	return length + new_size;
 }
 
-void stuffing(char *buff,char *stuffed_buffer){
+void stuffing(char *buff,char *stuffed_buffer, int length){
 	int i,index;
 
 	index = 1;
 
-	for(i=0;i<sizeof(buff);i++){
+	for(i=0;i<length;i++){
 		stuffed_buffer[i] = buff[i];
 		if(buff[i] == FLAG_RCV){
 			stuffed_buffer[index] = ESCAPE;
@@ -343,10 +343,10 @@ int llwrite(int fd, char *buffer, int length){
 	// Stuffing da trama
 	new_size = size_stuffing(trama,length + 6);
 	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
-	stuffing(trama,stuffed_buffer);
+	stuffing(trama,stuffed_buffer,length + 6);
 
 	for(i=0;i<length + 6;i++){
-		printf("stuffed_buffer[%d] = %c \n",i,stuffed_buffer[i]);
+		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
 	}
 
 	/* Envia trama TRAMA I*/							
