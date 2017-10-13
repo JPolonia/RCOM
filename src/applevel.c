@@ -75,11 +75,25 @@ int controlPacket(char *buffer, int fileSize, char *fileName, char C){  //funcio
     
 }
 
-int startPacket(char *buffer, int fileSize, char *fileName){ //funciona
-    return controlPacket(buffer, fileSize, fileName, 0x02);
+int sendStartPacket(int fd,int fileSize, char *fileName){ //funciona em principio
+    
+    char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    
+    int size = controlPacket(buffer, fileSize, fileName, 0x02);
+    
+    while(llwrite(fd, buffer, size) < 0 );
+    
+    return size;
 }
 
-int endPacket(char *buffer, int fileSize, char *fileName){  //funciona
+int sendEndPacket(int fd, int fileSize, char *fileName){  //funciona em principio
+    
+    char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    
+    int size = controlPacket(buffer, fileSize, fileName, 0x03);
+    
+    while(llwrite(fd, buffer, size) < 0 );
+    
     return controlPacket(buffer, fileSize, fileName, 0x03);
 }
 

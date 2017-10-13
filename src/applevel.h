@@ -8,9 +8,9 @@ int numberOfOctets(int number);
 
 int controlPacket(char *buffer, int fileSize, char *fileName, char C);
 
-int startPacket(char *buffer, int fileSize, char *fileName);
+int sendStartPacket(int fd, int fileSize, char *fileName);
 
-int endPacket(char *buffer, int fileSize, char *fileName);
+int sendEndPacket(int fd, int fileSize, char *fileName);
 
 int dataPacket(char *buffer, int seqNumber, int tamanho, char *data );
 

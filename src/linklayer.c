@@ -202,7 +202,7 @@ int llread(int fd, char *buffer){
     
     llreadcalls++;
     return 9;*/
-    
+    /*
     if(llreadcalls < 3){
         buffer[0] = 0x01;
         llreadcalls++;
@@ -216,10 +216,13 @@ int llread(int fd, char *buffer){
     buffer[4] = 0x01;
     buffer[5] = 0x01; // size = 256 + 1 = 257
     buffer[6] = 0x01; //file name flag
-    buffer[7] = 'O';
-    buffer[8] = 'L';
-    buffer[9] = 'A';
-    return 10;
+    buffer[7] = 0x03; //param Lenght
+    buffer[8] = 'O';
+    buffer[9] = 'L';
+    buffer[10] = 'A';
+    return 11;*/
+    
+    return 0;
     
 }
 
