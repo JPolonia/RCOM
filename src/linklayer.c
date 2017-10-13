@@ -86,40 +86,41 @@ int initTermios(int fd){
 
 
 
-void readpacket(int fd,unsigned char *buffer,int state, char mode){
+void readpacket(int fd,unsigned char *buffer,int state, char mode, int x){
 	//int c=100;
 	int res;
 	//while(state!=4){
 		switch(state){
-			case 1: res = read(fd,buffer,1);
-				if(*buffer == FLAG_RCV){
-					buffer++;
+			case 1: res = read(fd,buffer+x,1);
+				if((buffer[x] == FLAG_RCV) && res){
+					x++;
 					state = 2;
 				}
 				break;
-			case 2: res = read(fd,buffer,1);
+			case 2: res = read(fd,buffer+x,1);
 
-				if (((*buffer)!= FLAG_RCV) && res){
-					buffer++;
+				if (((buffer[x])!= FLAG_RCV) && res){
+					x++;
 					state = 3;
 				}			
 				break;
-			case 3: res = read(fd,buffer,1);
-				if((*buffer) == FLAG_RCV){
+			case 3: res = read(fd,buffer+x,1);
+				if((buffer[x]) == FLAG_RCV){
 					state = 4;
-				} else buffer++;
+				} else x++;
 				break;
 			case 4: 
 				printf("OK!\n"); 			
 				return;
 		}
-		printf("STATE %d   -  0x%02x Expected: 0x%02x  res: %d\n",state,*buffer,FLAG_RCV,res);
+		printf("STATE %d   -  0x%02x Expected: 0x%02x  res: %d\n",state,buffer[x],FLAG_RCV,res);
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
 		return;
 	}
 	//}
-	readpacket(fd,buffer,state,mode);
+
+	readpacket(fd, buffer, state, mode, x);
 }
 
 int llopen(int fd, char flag){
@@ -149,7 +150,7 @@ int llopen(int fd, char flag){
 								res = write(fd,msg,5);
 								printf("%d bytes sent\n",res);
 								/*Espera pela resposta UA*/				
-								readpacket(fd,buff,1,TRANSMITTER);
+								readpacket(fd,buff,1,TRANSMITTER,0);
 								error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
 								
 							}							
@@ -157,7 +158,7 @@ int llopen(int fd, char flag){
 
 		case RECEIVER: 		printf("RECEIVER\n");
 							/*Espera pela trama SET*/
-							readpacket(fd,buff,1,RECEIVER);
+							readpacket(fd,buff,1,RECEIVER,0);
 							error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
 							if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
 							else {
@@ -223,45 +224,41 @@ int llread(int fd, char *buffer){
 
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
-	unsigned char RR[5] = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
 	int tam=0, state=1;
 
 	while(state!=7){
 		printf("STATE %d   llread\n",state);
 		switch(state){
-			case 1:	readpacket(fd, buff, 1, RECEIVER);
+			case 1:	readpacket(fd, buff, 1, RECEIVER, 0);
 					state=2;
 					break;
 
-			case 2:	if(buff[3]!=(buff[1]^buff[2])){
+			case 2:	if(buff[3]!=(buff[1]^buff[2]))
 							state=1;
-							break;
-							}
-						else {
+						else 
 							state=3;
-							break;
-							}	
+						break;
+								
 			case 3:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
 							write(fd, RR, 5);
 							state=1;
-							break;
 							}
-						else { 
+						else 
 							state=4;
-							break;
-						}
+						break;
+						
 			case 4:	if(buff[2]==0x40 && ll->sequenceNumber==0){
 								//RR = {0x7E, 0x03, 0x21, , 0x7E};
 							RR[2]=0x21;
-			    				RR[3]=0x03^0x21;
+			    			RR[3]=0x03^0x21;
 							write(fd, RR, 5);
 							state=1;
-							break;
 							}
-						else {
-							state=5;								break;
-						}
-
+						else 
+							state=5;								
+						break;
+					
 			case 5:	tam = destuffing(buff, buff_destuff);
 						if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
 							//REG
@@ -280,8 +277,8 @@ int llread(int fd, char *buffer){
 						else if(buff[2]==0x40){
 							ll->sequenceNumber=0;
 							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
-			    				RR[2]=0x21;
-			    				RR[3]=0x03^0x21;
+			    			RR[2]=0x21;
+			    			RR[3]=0x03^0x21;
 							write(fd, RR, 5);
 							state=1;
 						}							
@@ -323,14 +320,16 @@ void stuffing(char *buff,char *stuffed_buffer, int length){
 int llwrite(int fd, char *buffer, int length){
 	int i,res,new_size;
 	char RR[255];
-	char BCC2 = buffer[0];
+	char BCC2;
 	char *stuffed_buffer;
 	char *trama;
 
 	// Calc BCC2
-	for(i=1;i<length;i++){
+	/*for(i=1;i<length;i++){
 		BCC2 ^= buffer[i];
-	}
+	}*/
+
+	BCC2 = xor_result(buffer, length);
 
 	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
 	trama = (char *) malloc(sizeof(char) * length + 6);
