@@ -30,6 +30,9 @@ volatile int SNQNUM = 0;
 
 linkLayer* ll;
 
+int destuffing(char *buff, char *buff_destuff);
+char xor_result(char *array, int tam);
+
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 				  unsigned int timeout,unsigned int numTransmissions){
 
@@ -42,6 +45,7 @@ int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 
 	return 1;
 }
+
 
 int openSerialPort(char* port){
 	/*Open serial port device for reading and writing and not as controlling tty
@@ -181,8 +185,113 @@ int llopen(int fd, char flag){
 	
 }
 
+int destuffing(char *buff, char *buff_destuff){
+	int i=4, j=0;
+	while(buff[i]!=0x7e){
+		if(buff[i]==0x7d && buff[i+1]==0x5e){
+			buff_destuff[j]=0x7e;
+			i=i+2;
+			j++;		
+		}
+		else if(buff[i]==0x7d && buff[i+1]==0x5d){
+			buff_destuff[j]=0x7d;
+			i=i+2;
+			j++;		
+		}
+		else{
+			buff_destuff[j]=buff[i];
+			i++;
+			j++;
+		}
+	}
+	return j; 
+}
+
+char xor_result(char *array, int tam){
+	char xor;
+	int i=2;
+
+	xor = array[0] ^ array[1];
+
+	for(i=2; i<tam-1; i++){
+		xor = xor ^ array[i];
+	}
+	return xor;
+}
+
+
 int llread(int fd, char *buffer){
 
+	char buff[MAX_SIZE];
+	char buff_destuff[MAX_SIZE];
+	unsigned char RR[5] = {0x7E, 0x03, 0x01, 0x03^0x01, 0x7E};
+	int tam=0, state=1;
+
+	while(state!=7){
+		switch(state){
+			case'1':	readpacket(fd, buff, 1, RECEIVER);
+					state=2;
+
+
+			case'2':	if(buff[3]!=(buff[1]^buff[2])){
+							state=1;
+							break;
+							}
+						else {
+							state=3;
+							break;
+							}	
+			case'3':	if( buff[2]==0x00 && ll.sequenceNumber==1 ){
+							write(fd, RR, 5);
+							state=1;
+							break;
+							}
+						else { 
+							state=4;
+							break;
+						}
+			case'4':	if(buff[2]==0x40 && ll.sequenceNumber==0){
+								//RR = {0x7E, 0x03, 0x21, , 0x7E};
+							RR[2]=0x21;
+			    				RR[3]=0x03^0x21;
+							write(fd, RR, 5);
+							state=1;
+							break;
+							}
+						else {
+							state=5;								break;
+						}
+
+			case'5':	tam = destuffing(buff, buff_destuff);
+						if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
+							//REG
+							state=1;  // verificar!!!
+							}
+						else state=6;
+						break;
+			case'6':	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
+						strcpy(buffer, buff_destuff+4);
+						//RR[0]= enviar rr
+						if( buff[2]==0x00){
+							ll.sequenceNumber=1;
+							write(fd, RR, 5);
+							state=1;
+							}
+						else if(buff[2]==0x40){
+							ll.sequenceNumber=0;
+							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+			    				RR[2]=0x21;
+			    				RR[3]=0x03^0x21;
+							write(fd, RR, 5);
+							state=1;
+						}							
+						else state=7;
+						break;
+			case'7':	printf("Read OK!");
+				
+			}
+		}
+	return strlen(buffer);
 }
 
 int size_stuffing(char *buff){
