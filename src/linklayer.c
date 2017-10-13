@@ -345,6 +345,10 @@ int llwrite(int fd, char *buffer, int length){
 	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
 	stuffing(buffer,stuffed_buffer);
 
+	for(i=0;i<strlen(stuffed_buffer);i++){
+		printf("stuffed_buffer[%d] = %c \n",i,stuffed_buffer[i]);
+	}
+
 	/* Envia trama TRAMA I*/							
 	res = write(fd,stuffed_buffer,strlen(stuffed_buffer));
 	printf("%d bytes sent\n",res);
