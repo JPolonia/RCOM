@@ -32,7 +32,7 @@ int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);
 
-void readpacket(int fd,unsigned char *buffer,int state, char mode);
+void readpacket(int fd,unsigned char *buffer,int state, char mode, int x);
 int llopen(int fd, char flag);
 int llread(int fd, char *buffer);
 int destuffing(char *buff, char *buff_destuff);
