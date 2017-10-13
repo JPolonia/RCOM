@@ -21,8 +21,9 @@ int main(int argc, char** argv)
 {
     int fd, e;
     char mode;
-    /*char file_name[] = "test.png";
-    int fd_file;   */
+    char file_name[] = "ola";
+    char read_str[255];
+    //int fd_file;  
 	
 
     if ( (argc < 3) || 
@@ -55,8 +56,13 @@ int main(int argc, char** argv)
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? TRANSMITTER : RECEIVER;
     llopen(fd, mode);
-    //llwrite(fd, file_name,sizeof(file_name));
-    
+    switch(mode){
+        case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
+                          break;
+        case RECEIVER:    llread(fd,read_str)
+                          printf("STR: %s \n",read_str);
+                          break;
+      }
     
 
     sleep(1);

@@ -331,7 +331,7 @@ int llwrite(int fd, char *buffer, int length){
 	}
 
 	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
-	trama = (char *) malloc(sizeof(char *) * length + 6);
+	trama = (char *) malloc(sizeof(char) * length + 6);
 	trama[0] = FLAG_RCV;
 	trama[1] = A;
 	trama[2] = (SNQNUM) ? C_I_1 : C_I_0;
@@ -342,11 +342,11 @@ int llwrite(int fd, char *buffer, int length){
 	
 	// Stuffing da trama
 	new_size = size_stuffing(buffer);
-	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
+	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
 	stuffing(buffer,stuffed_buffer);
 
 	/* Envia trama TRAMA I*/							
-	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
+	res = write(fd,stuffed_buffer,strlen(stuffed_buffer));
 	printf("%d bytes sent\n",res);
 
 	/* Free Memmory*/
