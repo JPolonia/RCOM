@@ -28,9 +28,9 @@ volatile int SNQNUM = 0;
 
 linkLayer* ll;
 
-/*int initLinkLayer(){
+int initLinkLayer(char* port, char mode,int baudRate){
 	
-}*/
+}
 
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){

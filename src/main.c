@@ -9,21 +9,24 @@
 #include "linklayer.h"
 #include "alarm.h"
 
+#define MAX_TRIES 3
+#define TIMEOUT 3
 
 linkLayer* ll;
 
 int main(int argc, char** argv)
 {
     int fd;
+    char mode;
     struct termios oldtio,newtio;
     /*char file_name[] = "test.png";
     int fd_file;   */
 	
 
-    if ( (argc < 2) || 
-  	     ((strcmp("/dev/ttyS0", argv[1])!=0) && 
-  	      (strcmp("/dev/ttyS1", argv[1])!=0) )) {
-      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+    if ( (argc < 3) || 
+         ((strcmp("/dev/ttyS0", argv[1])) && (strcmp("/dev/ttyS1", argv[1])) ) ||
+         ((strcmp("TRANSMITTER", argv[2])) && (strcmp("RECEIVER", argv[2])) )) {
+      printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1 RECEIVER\n");
       exit(1);
     }
 
@@ -76,12 +79,14 @@ int main(int argc, char** argv)
     
     /*Open File to be transfered*/
     //fd_file = open(file_name, O_RDONLY);
- 
+    
 
     //Initialize alarm
 	  initAlarm();
 
-    llopen(fd, RECEIVER);
+    
+    mode = (strcmp("TRANSMITTER", argv[2])) ? TRANSMITTER : RECEIVER;
+    llopen(fd, mode);
     //llwrite(fd, file_name,sizeof(file_name));
     
     

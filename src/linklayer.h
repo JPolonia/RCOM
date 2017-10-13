@@ -12,12 +12,6 @@
 #define TRANSMITTER 0x03
 #define RECEIVER 0x01
 
-#define MAX_TRIES 3
-#define TIMEOUT 3
-
-
-
-
 
 typedef struct linkLayer {
 	char port[20]; //Port /dev/ttySx
