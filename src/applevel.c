@@ -221,6 +221,8 @@ int receiveStart(int fd, char *fileName){
             if(packet[i] == 0x00){ // file size
                 i++;
                 paramLen = packet[i];
+                printf("paramLen = %d\n", paramLen);
+                
                 i++;
                 tamanho = getFileSize(&packet[i], paramLen);
                 i = i + paramLen;
@@ -228,34 +230,15 @@ int receiveStart(int fd, char *fileName){
                 assert(packet[i] == 0x01); //file name
                 i++;
                 paramLen = packet[i];
-                
-                for(j = 0; j< paramLen; j++){
-                    fileName[j] = packet[i];
-                    i++;
-                }
-                //fileName[j] = 0;
-            }
-            /*
-            else if(packet[i] == 0x01){  //file name
-                i++;
-                paramLen = packet[i];
+                printf("paramLen = %d\n", paramLen);
                 i++;
                 
                 for(j = 0; j< paramLen; j++){
                     fileName[j] = packet[i];
                     i++;
                 }
-                
-                assert(packet[i] == 0x00); //file size
-                i++;
-                
-                paramLen = packet[i];
-                i++;
-                
-                tamanho = getFileSize(&packet[i], paramLen);
-                i++;
+                fileName[j] = 0;
             }
-            */
             break;
         }
     }
