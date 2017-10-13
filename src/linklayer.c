@@ -86,9 +86,10 @@ int initTermios(int fd){
 
 
 
-void readpacket(int fd,unsigned char *buffer,int state, char mode, int x){
+void readpacket(int fd,unsigned char *buffer,int state, char mode, int* x){
 	//int c=100;
 	int res;
+	printf("STATE %d   - buufer[%d] - 0x%02x Expected: 0x%02x  res: %d\n",state, x,buffer[x],FLAG_RCV,res);
 	//while(state!=4){
 		switch(state){
 			case 1: res = read(fd,buffer+x,1);
@@ -110,10 +111,11 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode, int x){
 				} else x++;
 				break;
 			case 4: 
-				printf("OK!\n"); 			
+				printf("OK!\n");
+				x=0; 			
 				return;
 		}
-		printf("STATE %d   -  0x%02x Expected: 0x%02x  res: %d\n",state,buffer[x],FLAG_RCV,res);
+		
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
 		return;
@@ -186,7 +188,11 @@ int llopen(int fd, char flag){
 }
 
 int destuffing(char *buff, char *buff_destuff){
-	int i=4, j=0;
+	int i=1, j=0;
+
+	buff_destuff[j]=0x7e; 
+	j++;
+
 	while(buff[i]!=0x7e){
 		if(buff[i]==0x7d && buff[i+1]==0x5e){
 			buff_destuff[j]=0x7e;
@@ -204,6 +210,9 @@ int destuffing(char *buff, char *buff_destuff){
 			j++;
 		}
 	}
+	buff_destuff[j]=0x7e; 
+	j++;
+
 	return j; 
 }
 
@@ -225,47 +234,59 @@ int llread(int fd, char *buffer){
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
-	int tam=0, state=1;
+	int tam=0, state=1, i, x=0;
 
 	while(state!=7){
-		printf("STATE %d   llread\n",state);
+		printf("STATE %d - llread\n",state);
 		switch(state){
-			case 1:	readpacket(fd, buff, 1, RECEIVER, 0);
+			case 1:	readpacket(fd, buff, 1, RECEIVER, &x);
 					state=2;
-					break;
 
-			case 2:	if(buff[3]!=(buff[1]^buff[2]))
+					for(i=0;i< + 6;i++){
+					printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+					}
+
+					break;
+		
+			case 2:	tam = destuffing(buff, buff_destuff);
+						//if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
+							//REG
+							//state=1;  // verificar!!!
+							//}
+						//else 
+
+					for(i=0;i<tam + 6;i++){
+					printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
+					}
+					return 1;
+					state=3;
+						break;
+
+			case 3:	if(buff[3]!=(buff[1]^buff[2]))
 							state=1;
 						else 
-							state=3;
+							state=4;
 						break;
 								
-			case 3:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
+			case 4:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
 							write(fd, RR, 5);
 							state=1;
 							}
 						else 
-							state=4;
+							state=5;
 						break;
 						
-			case 4:	if(buff[2]==0x40 && ll->sequenceNumber==0){
-								//RR = {0x7E, 0x03, 0x21, , 0x7E};
+			case 5:	if(buff[2]==0x40 && ll->sequenceNumber==0){
+							//RR = {0x7E, 0x03, 0x21, , 0x7E};
 							RR[2]=0x21;
 			    			RR[3]=0x03^0x21;
 							write(fd, RR, 5);
 							state=1;
 							}
 						else 
-							state=5;								
+							state=6;								
 						break;
 					
-			case 5:	tam = destuffing(buff, buff_destuff);
-						if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
-							//REG
-							state=1;  // verificar!!!
-							}
-						else state=6;
-						break;
 			case 6:	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
 						strcpy(buffer, buff_destuff+4);
 						//RR[0]= enviar rr
@@ -284,6 +305,7 @@ int llread(int fd, char *buffer){
 						}							
 						else state=7;
 						break;
+
 			case 7:	printf("Read OK!");
 				
 			}
