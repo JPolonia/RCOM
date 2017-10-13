@@ -341,9 +341,9 @@ int llwrite(int fd, char *buffer, int length){
 	trama[length + 5] = FLAG_RCV;
 	
 	// Stuffing da trama
-	new_size = size_stuffing(buffer);
+	new_size = size_stuffing(trama);
 	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
-	stuffing(buffer,stuffed_buffer);
+	stuffing(trama,stuffed_buffer);
 
 	for(i=0;i<strlen(stuffed_buffer);i++){
 		printf("stuffed_buffer[%d] = %c \n",i,stuffed_buffer[i]);
