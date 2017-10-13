@@ -292,9 +292,9 @@ int llread(int fd, char *buffer){
 	return strlen(buffer);
 }
 
-int size_stuffing(char *buff){
+int size_stuffing(char *buff, int length){
 	int i,new_size=0;
-	for(i=1;i<sizeof(buff)-1;i++){
+	for(i=1;i<length-1;i++){
 		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
 	}
 	return sizeof(buff) + new_size;
@@ -341,16 +341,16 @@ int llwrite(int fd, char *buffer, int length){
 	trama[length + 5] = FLAG_RCV;
 	
 	// Stuffing da trama
-	new_size = size_stuffing(trama);
+	new_size = size_stuffing(trama,length + 6);
 	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
 	stuffing(trama,stuffed_buffer);
 
-	for(i=0;i<strlen(stuffed_buffer);i++){
+	for(i=0;i<length + 6;i++){
 		printf("stuffed_buffer[%d] = %c \n",i,stuffed_buffer[i]);
 	}
 
 	/* Envia trama TRAMA I*/							
-	res = write(fd,stuffed_buffer,strlen(stuffed_buffer));
+	res = write(fd,stuffed_buffer,length + 6);
 	printf("%d bytes sent\n",res);
 
 	/* Free Memmory*/
