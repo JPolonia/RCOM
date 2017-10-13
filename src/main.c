@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 	  initAlarm();
 
     
-    mode = (strcmp("TRANSMITTER", argv[2])) ? TRANSMITTER : RECEIVER;
+    mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
     llopen(fd, mode);
     switch(mode){
         case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
