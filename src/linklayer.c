@@ -98,6 +98,7 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 				}
 				break;
 			case 2: res = read(fd,buffer,1);
+
 				if (((*buffer)!=FLAG_RCV) && res){
 					buffer++;
 					state = 3;
@@ -112,7 +113,7 @@ void readpacket(int fd,unsigned char *buffer,int state, char mode){
 				printf("OK!\n"); 			
 				return;
 		}
-		printf("STATE %d   -  %d Expected: %d  res: %d\n",state,buffer[0],FLAG_RCV,res);
+		printf("STATE %d   -  0x%02x Expected: 0x%02x  res: %d\n",state,*buffer,FLAG_RCV,res);
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
 		return;
@@ -226,12 +227,13 @@ int llread(int fd, char *buffer){
 	int tam=0, state=1;
 
 	while(state!=7){
+		printf("STATE %d   llread\n",state);
 		switch(state){
-			case'1':	readpacket(fd, buff, 1, RECEIVER);
+			case 1:	readpacket(fd, buff, 1, RECEIVER);
 					state=2;
+					break;
 
-
-			case'2':	if(buff[3]!=(buff[1]^buff[2])){
+			case 2:	if(buff[3]!=(buff[1]^buff[2])){
 							state=1;
 							break;
 							}
@@ -239,7 +241,7 @@ int llread(int fd, char *buffer){
 							state=3;
 							break;
 							}	
-			case'3':	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
+			case 3:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
 							write(fd, RR, 5);
 							state=1;
 							break;
@@ -248,7 +250,7 @@ int llread(int fd, char *buffer){
 							state=4;
 							break;
 						}
-			case'4':	if(buff[2]==0x40 && ll->sequenceNumber==0){
+			case 4:	if(buff[2]==0x40 && ll->sequenceNumber==0){
 								//RR = {0x7E, 0x03, 0x21, , 0x7E};
 							RR[2]=0x21;
 			    				RR[3]=0x03^0x21;
@@ -260,14 +262,14 @@ int llread(int fd, char *buffer){
 							state=5;								break;
 						}
 
-			case'5':	tam = destuffing(buff, buff_destuff);
+			case 5:	tam = destuffing(buff, buff_destuff);
 						if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
 							//REG
 							state=1;  // verificar!!!
 							}
 						else state=6;
 						break;
-			case'6':	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
+			case 6:	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
 						strcpy(buffer, buff_destuff+4);
 						//RR[0]= enviar rr
 						if( buff[2]==0x00){
@@ -285,7 +287,7 @@ int llread(int fd, char *buffer){
 						}							
 						else state=7;
 						break;
-			case'7':	printf("Read OK!");
+			case 7:	printf("Read OK!");
 				
 			}
 		}
