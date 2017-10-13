@@ -4,11 +4,13 @@
 #include <unistd.h>
 #include <assert.h>
 #include <math.h>
+#include "linklayer.h"
 
 #define FALSE 0
 #define TRUE 1
 
-#define MAX_SIZE 10
+#define DATA_LEN 256
+#define TRAILER_SIZE 4
 
 int int_pow(int base, int exp){ // funciona
     int result = 1;
@@ -93,7 +95,7 @@ int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){ //falta v
     
     buffer[i] = tamanho >> 8;  //L2
     i++;
-    buffer[i] = tamanho & (2^8); //L1
+    buffer[i] = tamanho & ((2^8)-1); //L1
     i++;
     
     for(j = 0; j< tamanho; j++){
@@ -103,39 +105,174 @@ int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){ //falta v
     return i;
 }
 
-FILE *openFile(char *pathToFile){ //funciona
+FILE *openFileTransmmiter(char *pathToFile){ //funciona
     FILE *file = fopen(pathToFile, "rb");
     if (file == NULL) {
         printf("Erro ao abrir ficheiro\n");
+        assert(file != NULL);
+        return NULL;
+    }
+    return file;
+}
+
+FILE *openFileReceiver(char *pathToFile){ //funciona
+    FILE *file = fopen(pathToFile, "wb");
+    if (file == NULL) {
+        printf("Erro ao abrir ficheiro\n");
+        assert(file != NULL);
         return NULL;
     }
     return file;
 }
 
 size_t sendData(FILE *file, int fd){ //funciona
-    char buffer[MAX_SIZE];
+    char buffer[DATA_LEN];
+    char packet[DATA_LEN + TRAILER_SIZE];
     size_t bytesRead = 0;
     size_t total = 0;
     
+    int packetSize = 0;
+    
     int seqNumber = 0;
     
-    while(bytesRead = fread(buffer, 1, MAX_SIZE-1, file), bytesRead != 0){
+    while(bytesRead = fread(buffer, 1, DATA_LEN-1, file), bytesRead != 0){
         
-        //falta chamar dataPacket()
+        packetSize = dataPacket(packet, seqNumber, bytesRead, buffer);
+        assert(packetSize == (bytesRead + TRAILER_SIZE) );
         
+        while(llwrite(fd, packet, packetSize) < 0 );
         
-        //llwrite(fd, buffer, bytesRead); //retirar quando juntar código
         total = total + bytesRead;
         seqNumber++;
+        if(seqNumber == 256) seqNumber = 0;
     }
     return total;
 }
 
+int getSeqNumber(char *packet){
+    return (int)packet[1];
+}
+
+int getPacketSize(char * packet){
+    return (256 * (int)packet[2]) + (int)packet[3];
+}
+
+size_t receiveData(FILE *file, int fd){ //funciona
+    char packet[DATA_LEN + TRAILER_SIZE];
+    size_t bytesWritten = 0;
+    size_t total = 0;
+    
+    int packetSizeRead = 0;
+    int packetSize= 0;
+    
+    int receivedEnd = 0;
+    
+    int seqNumber = 0;
+    
+    while(receivedEnd == 0){
+        packetSizeRead = llread(fd, packet);
+        if(packet[0] == 0x03){ //flag de end
+            receivedEnd = 1;
+            continue;
+        }
+        else if(packet[0] == 0x01){ //pacote de dados
+            assert(seqNumber == getSeqNumber(packet)); //verifica que recebemos o pacote de dados certo
+            
+            packetSize = getPacketSize(packet);
+            
+            assert(packetSize == (packetSizeRead-4)); //verifica que o pacote tem a quantidade de dados que vem descrita no cabeçalho
+            
+            bytesWritten = fwrite(&packet[4], 1, packetSizeRead-4, file);
+            assert(bytesWritten == (packetSizeRead-4) ); //verifica que escreveu tudo
+            
+            total = total + bytesWritten;
+            seqNumber++;
+            if(seqNumber == 256) seqNumber = 0;
+        }
+        else{
+            printf("Received wrong packet.\n");
+        }
+        
+    }
+    return total;
+}
+
+int getFileSize(char *buff, int sizeBuff){
+    int fileSize = 0;
+    int i;
+    for(i = 0; i<sizeBuff ; i++){
+        fileSize = fileSize + buff[i] * int_pow(256,i);
+    }
+    return fileSize;
+}
+
+int receiveStart(int fd, char *fileName){
+    int tamanho = 0;
+    int i = 0;
+    int j = 0;
+    int paramLen = 0;
+    char packet[DATA_LEN + TRAILER_SIZE];
+    while(1){
+        llread(fd, packet);
+        i = 0;
+        if(packet[i] == 0x02){
+            i++;
+            
+            if(packet[i] == 0x00){ // file size
+                i++;
+                paramLen = packet[i];
+                i++;
+                tamanho = getFileSize(&packet[i], paramLen);
+                i = i + paramLen;
+                
+                assert(packet[i] == 0x01); //file name
+                i++;
+                paramLen = packet[i];
+                
+                for(j = 0; j< paramLen; j++){
+                    fileName[j] = packet[i];
+                    i++;
+                }
+                //fileName[j] = 0;
+            }
+            /*
+            else if(packet[i] == 0x01){  //file name
+                i++;
+                paramLen = packet[i];
+                i++;
+                
+                for(j = 0; j< paramLen; j++){
+                    fileName[j] = packet[i];
+                    i++;
+                }
+                
+                assert(packet[i] == 0x00); //file size
+                i++;
+                
+                paramLen = packet[i];
+                i++;
+                
+                tamanho = getFileSize(&packet[i], paramLen);
+                i++;
+            }
+            */
+            break;
+        }
+    }
+    
+    
+    return tamanho;
+}
+
+
+
+
+
 void closeFile(FILE *file){
     fclose(file);
 }
-    
-    
+
+
     
     
 

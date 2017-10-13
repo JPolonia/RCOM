@@ -50,34 +50,35 @@ int openSerialPort(char* port){
 }
 
 int closeSerialPort( int fd){
-	tcsetattr(fd,TCSANOW,&ll->oldtio);
+	//tcsetattr(fd,TCSANOW,&ll->oldtio);
     close(fd);
+    return 0;
 }
 
 int initTermios(int fd){
 	// save current port setting
-	if ( tcgetattr(fd,&ll->oldtio) == -1) { 
+	/*if ( tcgetattr(fd,&ll->oldtio) == -1) {
 		perror("tcgetattr");
 		exit(-1);
-	}
+	}*/
 	
-	bzero(&ll->newtio, sizeof(ll->newtio));
-	ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
-	ll->newtio.c_iflag = IGNPAR;
-	ll->newtio.c_oflag = 0;
+	//bzero(&ll->newtio, sizeof(ll->newtio));
+	//ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
+	//ll->newtio.c_iflag = IGNPAR;
+	//ll->newtio.c_oflag = 0;
 
 	/* set input mode (non-canonical, no echo,...) */
-	ll->newtio.c_lflag = 0;
-	ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-	ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+	//ll->newtio.c_lflag = 0;
+	//ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+	//ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
 /* VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
 	leitura do(s) próximo(s) caracter(es)*/
 	tcflush(fd, TCIOFLUSH);
 
-	if ( tcsetattr(fd,TCSANOW,&ll->newtio) == -1) {
+	/*if ( tcsetattr(fd,TCSANOW,&ll->newtio) == -1) {
 	perror("tcsetattr");
 	exit(-1);
-	}
+	}*/
 
 	return 1;
 }
@@ -181,8 +182,45 @@ int llopen(int fd, char flag){
 	
 }
 
-int llread(int fd, char *buffer){
+int llreadcalls = 0;
 
+int llread(int fd, char *buffer){
+    /*
+    if(llreadcalls == 3){
+        buffer[0] = 0x03;
+        return 1;
+    }
+    buffer[0] = 0x01;
+    buffer[1] = (char)llreadcalls;
+    buffer[2] = 0x00;
+    buffer[3] = 0x05;
+    buffer[4] = 'a';
+    buffer[5] = 'b';
+    buffer[6] = 'c';
+    buffer[7] = 'd';
+    buffer[8] = ' ';
+    
+    llreadcalls++;
+    return 9;*/
+    
+    if(llreadcalls < 3){
+        buffer[0] = 0x01;
+        llreadcalls++;
+        return 1;
+    }
+    
+    buffer[0] = 0x02;
+    buffer[1] = 0x00; //file size flag
+    buffer[2] = 0x03; //param Lenght
+    buffer[3] = 0x00;
+    buffer[4] = 0x01;
+    buffer[5] = 0x01; // size = 256 + 1 = 257
+    buffer[6] = 0x01; //file name flag
+    buffer[7] = 'O';
+    buffer[8] = 'L';
+    buffer[9] = 'A';
+    return 10;
+    
 }
 
 int size_stuffing(char *buff){
@@ -212,12 +250,21 @@ void stuffing(char *buff,char *stuffed_buffer){
 }
 
 int llwrite(int fd, char *buffer, int length){
-	int i,res,new_size;
-	char RR[255];
+    /*int i,res,new_size;
 	char BCC2 = buffer[0];
 	char *stuffed_buffer;
-	char *trama;
-
+	char *trama;*/
+    int i;
+    
+    printf("HEX:\n\n");
+    
+    for(i=0; i<length; i++){
+        printf("0x%02x  %c\n", buffer[i], buffer[i]);
+    }
+    
+    printf("\n\n");
+    
+/*
 	// Calc BCC2
 	for(i=1;i<length;i++){
 		BCC2 ^= buffer[i];
@@ -238,19 +285,19 @@ int llwrite(int fd, char *buffer, int length){
 	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
 	stuffing(buffer,stuffed_buffer);
 
-	/* Envia trama TRAMA I*/							
+	// Envia trama TRAMA I
 	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
 	printf("%d bytes sent\n",res);
 
-	/* Free Memmory*/
+	// Free Memmory
 	//free(trama);
 	//free(stuffed_buffer);
 	
-	/* Espera pela resposta RR*/				
+	//Espera pela resposta RR
 	//readpacket(fd,RR,255,TRANSMITTER);
 	
 	// Verificar RR
-
+*/
 
 	SNQNUM = (SNQNUM) ? 0 : 1;		
 
