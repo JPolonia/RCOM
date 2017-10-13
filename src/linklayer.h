@@ -4,7 +4,6 @@
 #pragma once
 
 #define MAX_SIZE 256
-#define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
@@ -20,6 +19,7 @@ typedef struct linkLayer {
 	unsigned int timeout; //Valor do temporizador
 	unsigned int numTransmissions; //Numero Tentativas em caso de falha
 	char frame[MAX_SIZE]; //Trama
+	struct termios oldtio,newtio; //Struct to save old and new termios
 } linkLayer;
 
 extern linkLayer* ll;
@@ -30,7 +30,7 @@ extern linkLayer* ll;
 
 typedef enum {
 	A_TX = 0x03, A_RX = 0x01
-} AdressField;
+} AdressField;gi
 
 typedef struct SUframe {
 	char F;
@@ -43,6 +43,9 @@ typedef struct Iframe {
 	struct SUframe;
 	char* Payload;
 } IFrame;*/	
+
+int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
+	unsigned int timeout,unsigned int numTransmissions);
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode);
 int llopen(int fd, char flag);

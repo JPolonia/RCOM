@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include <termios.h>
+
 #include "linklayer.h"
 #include "alarm.h"
 
@@ -28,9 +30,58 @@ volatile int SNQNUM = 0;
 
 linkLayer* ll;
 
-int initLinkLayer(char* port, char mode,int baudRate){
-	
+int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
+				  unsigned int timeout,unsigned int numTransmissions){
+
+	ll = (linkLayer*) malloc(sizeof(linkLayer));
+	strcpy(ll->port, port);
+	ll->baudRate = baudRate;
+	ll->sequenceNumber = sequenceNumber;
+	ll->timeout = timeout;
+	ll->numTransmissions = numTransmissions;
+
+	return 1;
 }
+
+int openSerialPort(char* port){
+	/*Open serial port device for reading and writing and not as controlling tty
+    because we don't want to get killed if linenoise sends CTRL-C.*/    
+	return open(port, O_RDWR | O_NOCTTY );
+}
+
+int closeSerialPort( int fd){
+	tcsetattr(fd,TCSANOW,&ll->oldtio);
+    close(fd);
+}
+
+int initTermios(int fd){
+	// save current port setting
+	if ( tcgetattr(fd,&ll->oldtio) == -1) { 
+		perror("tcgetattr");
+		exit(-1);
+	}
+	
+	bzero(&ll->newtio, sizeof(ll->newtio));
+	ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
+	ll->newtio.c_iflag = IGNPAR;
+	ll->newtio.c_oflag = 0;
+
+	/* set input mode (non-canonical, no echo,...) */
+	ll->newtio.c_lflag = 0;
+	ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+	ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+/* VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
+	leitura do(s) próximo(s) caracter(es)*/
+	tcflush(fd, TCIOFLUSH);
+
+	if ( tcsetattr(fd,TCSANOW,&ll->newtio) == -1) {
+	perror("tcsetattr");
+	exit(-1);
+	}
+
+	return 1;
+}
+
 
 
 void readpacket(int fd,unsigned char *buffer,int state, char mode){
