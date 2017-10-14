@@ -8,8 +8,6 @@
 #include <unistd.h>
 #include <signal.h>
 
-
-
 #include "linklayer.h"
 #include "alarm.h"
 
@@ -237,35 +235,32 @@ int llread(int fd, char *buffer){
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {FLAG_RCV, 0x03, 0x01, 0x03^0x01, FLAG_RCV};
-	int tam=0, state=1, i, x=0,bytesRead;
+	int sizeDestuffed=0, state=1, i, x=0,bytesRead=0;
 
 	while(state!=7){
-		printf("llread STATE %d - \n",state);
+		printf("STATE-LLREAD %d \n",state);
 		switch(state){
+			/*STATE-LLREAD 1 - READ STUFFED_BUFFER FROM BUFFER*/
 			case 1:	bytesRead = readpacket(fd, buff, 1, RECEIVER, x);
-					state=2;
-
-					for(i=0;i< + 6;i++){
-					printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
-					}
-
+					for(i=0;i<bytesRead;i++)
+						printf("stuffed_buffer[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+					state=2;				
 					break;
-		
-			case 2:	tam = destuffing(buff, buff_destuff);
-						//if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
+			
+			/*STATE-LLREAD 2 - DESTUFF THE STUFFED_BUFFER*/
+			case 2:	sizeDestuffed = destuffing(buff, buff_destuff);
+					for(i=0;i<sizeDestuffed;i++)
+						printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
+						//if(buff_destuff[sizeDestuffed-1]!=xor_result(buff_destuff, sizeDestuffed)) {
 							//REG
 							//state=1;  // verificar!!!
 							//}
 						//else 
-
-					for(i=0;i<tam + 6;i++){
-					printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
-					}
-					return 1;
-					state=3;
+						return 1;
+						state=3;
 						break;
 
-			case 3:	if(buff[3]!=(buff[1]^buff[2]))
+			/*case 3:	if(buff[3]!=(buff[1]^buff[2]))
 							state=1;
 						else 
 							state=4;
@@ -309,7 +304,7 @@ int llread(int fd, char *buffer){
 						else state=7;
 						break;
 
-			case 7:	printf("Read OK!");
+			case 7:	printf("Read OK!");*/
 				
 			}
 		}
