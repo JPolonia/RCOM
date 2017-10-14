@@ -328,15 +328,15 @@ void stuffing(char *buff,char *stuffed_buffer, int length){
 
 	index = 1;
 
-	for(i=0;i<length;i++){
-		stuffed_buffer[i] = buff[i];
+	for(i=1;i<length-1;i++){
+		stuffed_buffer[index++] = buff[i];
 		if(buff[i] == FLAG_RCV){
-			stuffed_buffer[index] = ESCAPE;
-			stuffed_buffer[++index]	= ESCAPE1;
+			stuffed_buffer[index++] = ESCAPE;
+			stuffed_buffer[index++]	= ESCAPE1;
 		}
 		if(buff[i] == ESCAPE){
-			stuffed_buffer[index] = ESCAPE;
-			stuffed_buffer[++index]	= ESCAPE2;
+			stuffed_buffer[index++] = ESCAPE;
+			stuffed_buffer[index++]	= ESCAPE2;
 		}
 	}	 
 }
