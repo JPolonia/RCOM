@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
     int fd, e;
     char mode;
-    char file_name[] = "ola";
+    char file_name[] = "tou cheio da fome!";
     char read_str[255];
     //int fd_file;  
 	
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
         case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
                           break;
         case RECEIVER:    llread(fd,read_str);
-                          printf("STR: %s \n",read_str);
+                          //printf("STR: %s \n",read_str);
                           break;
       }
     

@@ -85,7 +85,7 @@ int initTermios(int fd){
 int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 	//int c=100;
 	int bytesRead;
-	if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII -  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+	
 	//while(state!=4){
 		switch(state){
 			/*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
@@ -108,6 +108,7 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 			case 3: bytesRead = read(fd,buffer+index,1);
 					if((buffer[index]) == FLAG_RCV){
 						state = 4;
+						index++;
 					} else index++;
 					break;
 			
@@ -116,6 +117,9 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 					printf("OK!\n");
 					return index;
 		}
+	
+		if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII %d-  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+		else printf("STATE 1 - WAITING FOR FLAG_RCV");
 		
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
