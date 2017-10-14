@@ -85,7 +85,7 @@ int initTermios(int fd){
 int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 	//int c=100;
 	int bytesRead;
-	printf("STATE %d   - buffer[%d] - 0x%02x Expected: 0x%02x  bytesRead: %d\n",state, index,buffer[index],FLAG_RCV,bytesRead);
+	if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII -  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
 	//while(state!=4){
 		switch(state){
 			/*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
@@ -232,7 +232,7 @@ char xor_result(char *array, int tam){
 
 int llread(int fd, char *buffer){
 
-	unsigned char buff[MAX_SIZE];
+	unsigned char stuffed_buffer[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {FLAG_RCV, 0x03, 0x01, 0x03^0x01, FLAG_RCV};
 	int sizeDestuffed=0, state=1, i, x=0,bytesRead=0;
@@ -241,14 +241,14 @@ int llread(int fd, char *buffer){
 		printf("STATE-LLREAD %d \n",state);
 		switch(state){
 			/*STATE-LLREAD 1 - READ STUFFED_BUFFER FROM BUFFER*/
-			case 1:	bytesRead = readpacket(fd, buff, 1, RECEIVER, x);
+			case 1:	bytesRead = readpacket(fd, stuffed_buffer, 1, RECEIVER, x);
 					for(i=0;i<bytesRead;i++)
-						printf("stuffed_buffer[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+						printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
 					state=2;				
 					break;
 			
 			/*STATE-LLREAD 2 - DESTUFF THE STUFFED_BUFFER*/
-			case 2:	sizeDestuffed = destuffing(buff, buff_destuff);
+			case 2:	sizeDestuffed = destuffing(stuffed_buffer, buff_destuff);
 					for(i=0;i<sizeDestuffed;i++)
 						printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
 						//if(buff_destuff[sizeDestuffed-1]!=xor_result(buff_destuff, sizeDestuffed)) {
