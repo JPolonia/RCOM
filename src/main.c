@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <assert.h>
 #include "linklayer.h"
 #include "alarm.h"
 #include "applevel.h"
@@ -20,8 +21,9 @@ linkLayer* ll;
 
 int main(int argc, char** argv)
 {
-    int fd, e;
+    int fd, e, res;
     char mode;
+	char c;
     //char file_name[] = "ola";
     //char read_str[255];
     //int fd_file;  
@@ -52,7 +54,22 @@ int main(int argc, char** argv)
 
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
-    llopen(fd, mode);
+
+	if(mode == TRANSMITTER){
+		assert(write(fd, "OLA OLA OLA", 11) == 11);	
+	}
+	else if(mode == RECEIVER){
+		while(1){
+			res = read(fd,&c,1);
+			if(res == 1){
+				printf("%c\n", c);
+			}		
+		}	
+	}
+
+
+
+    //llopen(fd, mode);
 	/*
     switch(mode){
         case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
