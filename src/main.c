@@ -21,9 +21,11 @@ linkLayer* ll;
 
 int main(int argc, char** argv)
 {
-    int fd, e, res;
+    int fd, e, i;
     char mode;
-	char c;
+	//char c;
+	char dataToSend[200];
+	unsigned char dataReceived[200];
     //char file_name[] = "ola";
     //char read_str[255];
     //int fd_file;  
@@ -56,15 +58,27 @@ int main(int argc, char** argv)
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
 	if(mode == TRANSMITTER){
-		assert(write(fd, "OLA OLA OLA", 11) == 11);	
+		dataToSend[0] = 0x7e;
+		dataToSend[1] = 'a';
+		dataToSend[2] = 'b';
+		dataToSend[3] = 'c';
+		dataToSend[4] = 'd';
+		dataToSend[5] = 'e';
+		dataToSend[6] = 'f';
+		dataToSend[7] = 'g';
+		dataToSend[8] = 'h';
+		dataToSend[9] = 0x7e;
+
+		assert(write(fd, dataToSend, 10) == 10);	
 	}
 	else if(mode == RECEIVER){
-		while(1){
-			res = read(fd,&c,1);
-			if(res == 1){
-				printf("%c\n", c);
-			}		
-		}	
+		
+		readpacket(fd, dataReceived, RECEIVER);
+		
+		for(i = 0; i < 15; i++){
+			printf("dataReceived[%d] = 0x%02x \n", i, dataReceived[i]);
+		}
+
 	}
 
 
