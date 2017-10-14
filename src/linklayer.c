@@ -326,7 +326,8 @@ int size_stuffing(char *buff, int length){
 void stuffing(char *buff,char *stuffed_buffer, int length){
 	int i,index;
 
-	index = 1;
+	index = 0;
+	stuffed_buffer[index++] = FLAG_RCV;
 
 	for(i=1;i<length-1;i++){
 		stuffed_buffer[index++] = buff[i];
@@ -338,7 +339,9 @@ void stuffing(char *buff,char *stuffed_buffer, int length){
 			stuffed_buffer[index++] = ESCAPE;
 			stuffed_buffer[index++]	= ESCAPE2;
 		}
-	}	 
+	}
+	
+	stuffed_buffer[index] = FLAG_RCV;
 }
 
 int llwrite(int fd, char *buffer, int length){
