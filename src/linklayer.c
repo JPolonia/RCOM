@@ -170,7 +170,7 @@ int llopen(int fd, char flag){
 								/*Envia resposta UA*/
 								msg[2] = C_UA;
 								msg[3] = A^C_UA;
-								res = write(fd,msg,5);
+								bytesWritten = write(fd,msg,5);
 								printf("%d bytes sent\n",bytesWritten);}
 							break;
 
@@ -237,12 +237,12 @@ int llread(int fd, char *buffer){
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {FLAG_RCV, 0x03, 0x01, 0x03^0x01, FLAG_RCV};
-	int tam=0, state=1, i, x=0;
+	int tam=0, state=1, i, x=0,bytesRead;
 
 	while(state!=7){
 		printf("llread STATE %d - \n",state);
 		switch(state){
-			case 1:	bytesRead = readpacket(fd, buff, 1, RECEIVER, &x);
+			case 1:	bytesRead = readpacket(fd, buff, 1, RECEIVER, x);
 					state=2;
 
 					for(i=0;i< + 6;i++){
