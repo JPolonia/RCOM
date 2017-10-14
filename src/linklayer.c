@@ -345,7 +345,7 @@ void stuffing(char *buff,char *stuffed_buffer, int length){
 }
 
 int llwrite(int fd, char *buffer, int length){
-	int i,bytesWritten,new_size;
+	int i,bytesWritten,new_size,sizeTrama=0;
 	char RR[255];
 	char BCC2;
 	char *stuffed_buffer;
@@ -368,14 +368,16 @@ int llwrite(int fd, char *buffer, int length){
 	trama[length + 4] = BCC2;
 	trama[length + 5] = FLAG_RCV;
 
+	sizeTrama = length + 6;
+
 	// Print trama I
 	for(i=0;i<length + 6;i++)
 		printf("trama[%d] = 0x%02x %c \n",i,trama[i],trama[i]);
 	
 	// Stuffing da trama
-	new_size = size_stuffing(trama,length + 6);
+	new_size = size_stuffing(trama,sizeTrama);
 	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size));
-	stuffing(trama,stuffed_buffer,new_size);
+	stuffing(trama,stuffed_buffer,sizeTrama);
 
 	for(i=0;i<new_size;i++)
 		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
