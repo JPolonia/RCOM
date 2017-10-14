@@ -88,7 +88,7 @@ int initTermios(int fd){
 
 
 
-void readpacket(int fd, unsigned char *buffer, unsigned char mode){
+void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 
 	int res = 0;
 	int state = 1;
@@ -125,7 +125,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){
 				break;
 		}
 		
-		printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
+		//printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
 
 
 	}
@@ -195,42 +195,36 @@ int llopen(int fd, unsigned char flag){
 	
 }
 
-int destuffing( unsigned char *buff, char *buff_destuff){
-	int i=1, j=0;
+int destuffing( unsigned char *buff, char *buffDestuff){ //Funciona
+	int i=4, j=0;
 
-	buff_destuff[j]=0x7e; 
-	j++;
-
-	while(buff[i]!=0x7e){
-		if(buff[i]==0x7d && buff[i+1]==0x5e){
-			buff_destuff[j]=0x7e;
+	while(buff[i]!=0x7e){ //OK
+		if(buff[i]==0x7d && buff[i+1]==0x5e){ //OK
+			buffDestuff[j]=0x7e;
 			i=i+2;
 			j++;		
 		}
-		else if(buff[i]==0x7d && buff[i+1]==0x5d){
-			buff_destuff[j]=0x7d;
+		else if(buff[i]==0x7d && buff[i+1]==0x5d){ //OK
+			buffDestuff[j]=0x7d;
 			i=i+2;
 			j++;		
 		}
-		else{
-			buff_destuff[j]=buff[i];
+		else{ //OK
+			buffDestuff[j]=buff[i];
 			i++;
 			j++;
 		}
 	}
-	buff_destuff[j]=0x7e; 
-	j++;
-
 	return j; 
 }
 
-unsigned char xor_result(char *array, int tam){
+unsigned char xor_result(char *array, int tam){ //funciona!!
 	unsigned char xor;
 	int i=2;
 
 	xor = array[0] ^ array[1];
 
-	for(i=2; i<tam-1; i++){
+	for(i=2; i<tam; i++){
 		xor = xor ^ array[i];
 	}
 	return xor;
@@ -329,22 +323,26 @@ int size_stuffing(char *buff, int length){
 	return length + new_size;
 }
 
-void stuffing(char *buff, char *stuffed_buffer, int length){
-	int i,index;
+int stuffing(char *buff, char *stuffedBuffer, int length){ //funciona
+	int i = 0, j = 0;
 
-	index = 1;
-
-	for(i=0;i<length;i++){
-		stuffed_buffer[i] = buff[i];
-		if(buff[i] == FLAG_RCV){
-			stuffed_buffer[index] = ESCAPE;
-			stuffed_buffer[++index]	= ESCAPE1;
+	for(i=0;i<length;i++){ //OK
+		if(buff[i] == FLAG_RCV){ //OK
+			stuffedBuffer[j] = ESCAPE;
+			stuffedBuffer[j+1]	= ESCAPE1;
+			j = j + 2;
 		}
-		if(buff[i] == ESCAPE){
-			stuffed_buffer[index] = ESCAPE;
-			stuffed_buffer[++index]	= ESCAPE2;
+		else if(buff[i] == ESCAPE){ //OK
+			stuffedBuffer[j] = ESCAPE;
+			stuffedBuffer[j+1]	= ESCAPE2;
+			j = j + 2;
 		}
-	}	 
+		else{ //OK
+			stuffedBuffer[j] = buff[i]; 
+			j++;
+		}		
+	}
+	return j;	 
 }
 
 int llwrite(int fd,char *buffer , int length){

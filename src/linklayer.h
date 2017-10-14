@@ -32,13 +32,27 @@ int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);
 
-void readpacket(int fd, unsigned char *buffer, unsigned char mode);
+void readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
+//devolve trama inteira incluindo 0x7e no inicio e fim em buffer
+//mode = TRANSMITTER ou RECEIVER
+
+
 int llopen(int fd, unsigned char flag);
+
 int llread(int fd, char *buffer);
-int destuffing( unsigned char *buff, char *buff_destuff);
-unsigned char xor_result(char *array, int tam);
+
+int destuffing( unsigned char *buff, char *buffDestuff); //OK
+//devolve campo de dados + BCC em buffDestuff
+//retorna tamanho de buffDestuff
+
+unsigned char xor_result(char *array, int tam); //OK
+//faz xor normalmente e retorna
+
 int size_stuffing(char *buff, int length);
-void stuffing(char *buff,char *stuffed_buffer, int length);
+int stuffing(char *buff,char *stuffedBuffer, int length); //OK
+//faz stuffing do bloco de dados + BCC
+//retorna tamanho de stuffedBuffer
+
 int llwrite(int fd,char *buffer, int length);
 int llclose(int fd);
 
