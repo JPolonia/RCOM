@@ -345,7 +345,7 @@ void stuffing(char *buff,char *stuffed_buffer, int length){
 }
 
 int llwrite(int fd, char *buffer, int length){
-	int i,res,new_size;
+	int i,bytesWritten,new_size;
 	char RR[255];
 	char BCC2;
 	char *stuffed_buffer;
@@ -381,8 +381,8 @@ int llwrite(int fd, char *buffer, int length){
 		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
 
 	/* Envia trama TRAMA I*/							
-	res = write(fd,stuffed_buffer,length + 6);
-	printf("%d bytes sent\n",res);
+	bytesWritten = write(fd,stuffed_buffer,new_size);
+	printf("%d bytes sent\n",bytesWritten);
 
 	/* Free Memmory*/
 	//free(trama);
