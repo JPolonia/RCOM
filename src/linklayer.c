@@ -8,7 +8,9 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <termios.h>
+#include <assert.h>
+
+
 
 #include "linklayer.h"
 #include "alarm.h"
@@ -43,6 +45,7 @@ int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 	return 1;
 }
 
+
 int openSerialPort(char* port){
 	/*Open serial port device for reading and writing and not as controlling tty
     because we don't want to get killed if linenoise sends CTRL-C.*/    
@@ -50,77 +53,87 @@ int openSerialPort(char* port){
 }
 
 int closeSerialPort( int fd){
-	//tcsetattr(fd,TCSANOW,&ll->oldtio);
-    close(fd);
-    return 0;
+	tcsetattr(fd,TCSANOW,&ll->oldtio);
+	close(fd);
+	return 1;
 }
 
 int initTermios(int fd){
 	// save current port setting
-	/*if ( tcgetattr(fd,&ll->oldtio) == -1) {
+	if ( tcgetattr(fd,&ll->oldtio) == -1) { 
 		perror("tcgetattr");
 		exit(-1);
-	}*/
+	}
 	
-	//bzero(&ll->newtio, sizeof(ll->newtio));
-	//ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
-	//ll->newtio.c_iflag = IGNPAR;
-	//ll->newtio.c_oflag = 0;
+	bzero(&ll->newtio, sizeof(ll->newtio));
+	ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
+	ll->newtio.c_iflag = IGNPAR;
+	ll->newtio.c_oflag = 0;
 
 	/* set input mode (non-canonical, no echo,...) */
-	//ll->newtio.c_lflag = 0;
-	//ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-	//ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
+	ll->newtio.c_lflag = 0;
+	ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+	ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
 /* VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
 	leitura do(s) próximo(s) caracter(es)*/
 	tcflush(fd, TCIOFLUSH);
 
-	/*if ( tcsetattr(fd,TCSANOW,&ll->newtio) == -1) {
+	if ( tcsetattr(fd,TCSANOW,&ll->newtio) == -1) {
 	perror("tcsetattr");
 	exit(-1);
-	}*/
+	}
 
 	return 1;
 }
 
 
 
-void readpacket(int fd,unsigned char *buffer,int state, char mode){
-	//int c=100;
-	int res;
-	//while(state!=4){
+void readpacket(int fd, unsigned char *buffer, unsigned char mode){
+
+	int res = 0;
+	int state = 1;
+	int i = 0;
+	while(state != 5){
+
+		if(alarmFlag && (mode==TRANSMITTER) ){ 		
+			break;
+		}
+
 		switch(state){
-			case 1: res = read(fd,buffer,1);
-				if(*buffer == FLAG_RCV){
-					buffer++;
+			case 1: res = read(fd,buffer+i,1);
+				if((buffer[i] == FLAG_RCV) && res){
+					i++;
 					state = 2;
 				}
 				break;
-			case 2: res = read(fd,buffer,1);
-				if (((*buffer)!=FLAG_RCV) && res){
-					buffer++;
+			case 2: res = read(fd,buffer+i,1);
+
+				if (((buffer[i])!= FLAG_RCV) && res){
+					i++;
 					state = 3;
 				}			
 				break;
-			case 3: res = read(fd,buffer,1);
-				if((*buffer) == FLAG_RCV){
+			case 3: res = read(fd,buffer+i,1);
+				if((buffer[i]) == FLAG_RCV){
 					state = 4;
-				} else buffer++;
+				} else i++;
 				break;
 			case 4: 
-				printf("OK!\n"); 			
-				return;
+				printf("OK!\n");
+				i=0; 			
+				state = 5;
+				break;
 		}
-		printf("STATE %d   -  %d Expected: %d  res: %d\n",state,buffer[0],FLAG_RCV,res);
 		
-	if(alarmFlag && (mode==TRANSMITTER) ){ 		
-		return;
+		printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
+
+
 	}
-	//}
-	readpacket(fd,buffer,state,mode);
+
+	//readpacket(fd, buffer, state, mode, x);
 }
 
-int llopen(int fd, char flag){
+int llopen(int fd, unsigned char flag){
 	
 	unsigned char msg[5];
 	unsigned char buff[5];
@@ -147,7 +160,7 @@ int llopen(int fd, char flag){
 								res = write(fd,msg,5);
 								printf("%d bytes sent\n",res);
 								/*Espera pela resposta UA*/				
-								readpacket(fd,buff,1,TRANSMITTER);
+								readpacket(fd,buff,TRANSMITTER);
 								error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
 								
 							}							
@@ -155,7 +168,7 @@ int llopen(int fd, char flag){
 
 		case RECEIVER: 		printf("RECEIVER\n");
 							/*Espera pela trama SET*/
-							readpacket(fd,buff,1,RECEIVER);
+							readpacket(fd,buff,RECEIVER);
 							error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
 							if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
 							else {
@@ -182,64 +195,146 @@ int llopen(int fd, char flag){
 	
 }
 
-int llreadcalls = 0;
+int destuffing( unsigned char *buff, char *buff_destuff){
+	int i=1, j=0;
+
+	buff_destuff[j]=0x7e; 
+	j++;
+
+	while(buff[i]!=0x7e){
+		if(buff[i]==0x7d && buff[i+1]==0x5e){
+			buff_destuff[j]=0x7e;
+			i=i+2;
+			j++;		
+		}
+		else if(buff[i]==0x7d && buff[i+1]==0x5d){
+			buff_destuff[j]=0x7d;
+			i=i+2;
+			j++;		
+		}
+		else{
+			buff_destuff[j]=buff[i];
+			i++;
+			j++;
+		}
+	}
+	buff_destuff[j]=0x7e; 
+	j++;
+
+	return j; 
+}
+
+unsigned char xor_result(char *array, int tam){
+	unsigned char xor;
+	int i=2;
+
+	xor = array[0] ^ array[1];
+
+	for(i=2; i<tam-1; i++){
+		xor = xor ^ array[i];
+	}
+	return xor;
+}
+
 
 int llread(int fd, char *buffer){
-    /*
-    if(llreadcalls == 3){
-        buffer[0] = 0x03;
-        return 1;
-    }
-    buffer[0] = 0x01;
-    buffer[1] = (char)llreadcalls;
-    buffer[2] = 0x00;
-    buffer[3] = 0x05;
-    buffer[4] = 'a';
-    buffer[5] = 'b';
-    buffer[6] = 'c';
-    buffer[7] = 'd';
-    buffer[8] = ' ';
-    
-    llreadcalls++;
-    return 9;*/
-    /*
-    if(llreadcalls < 3){
-        buffer[0] = 0x01;
-        llreadcalls++;
-        return 1;
-    }
-    
-    buffer[0] = 0x02;
-    buffer[1] = 0x00; //file size flag
-    buffer[2] = 0x03; //param Lenght
-    buffer[3] = 0x00;
-    buffer[4] = 0x01;
-    buffer[5] = 0x01; // size = 256 + 1 = 257
-    buffer[6] = 0x01; //file name flag
-    buffer[7] = 0x03; //param Lenght
-    buffer[8] = 'O';
-    buffer[9] = 'L';
-    buffer[10] = 'A';
-    return 11;*/
-    
-    return 0;
-    
+
+	unsigned char buff[MAX_SIZE];
+	char buff_destuff[MAX_SIZE];
+	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
+	int tam, state=1, i;
+
+	while(state!=7){
+		printf("STATE %d - llread\n",state);
+		switch(state){
+			case 1:	readpacket(fd, buff, RECEIVER);
+					state=2;
+
+					for(i=0;i< + 6;i++){
+					printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+					}
+
+					break;
+		
+			case 2:	tam = destuffing(buff, buff_destuff);
+						//if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
+							//REG
+							//state=1;  // verificar!!!
+							//}
+						//else 
+
+					for(i=0;i<tam + 6;i++){
+					printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
+					}
+					return 1;
+					state=3;
+						break;
+
+			case 3:	if(buff[3]!=(buff[1]^buff[2]))
+							state=1;
+						else 
+							state=4;
+						break;
+								
+			case 4:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
+							assert(write(fd, RR, 5) == 5);
+							state=1;
+							}
+						else 
+							state=5;
+						break;
+						
+			case 5:	if(buff[2]==0x40 && ll->sequenceNumber==0){
+							//RR = {0x7E, 0x03, 0x21, , 0x7E};
+							RR[2]=0x21;
+			    			RR[3]=0x03^0x21;
+							assert(write(fd, RR, 5) == 5);
+							state=1;
+							}
+						else 
+							state=6;								
+						break;
+					
+			case 6:	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
+						strcpy(buffer, buff_destuff+4);
+						//RR[0]= enviar rr
+						if( buff[2]==0x00){
+							ll->sequenceNumber=1;
+							assert(write(fd, RR, 5) == 5);
+							state=1;
+							}
+						else if(buff[2]==0x40){
+							ll->sequenceNumber=0;
+							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+			    			RR[2]=0x21;
+			    			RR[3]=0x03^0x21;
+							assert(write(fd, RR, 5) == 5);
+							state=1;
+						}							
+						else state=7;
+						break;
+
+			case 7:	printf("Read OK!");
+				
+			}
+		}
+	return strlen(buffer);
 }
 
-int size_stuffing(char *buff){
+int size_stuffing(char *buff, int length){
 	int i,new_size=0;
-	for(i=1;i<sizeof(buff)-1;i++){
+	for(i=1;i<length-1;i++){
 		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
 	}
-	return sizeof(buff) + new_size;
+	return length + new_size;
 }
 
-void stuffing(char *buff,char *stuffed_buffer){
+void stuffing(char *buff, char *stuffed_buffer, int length){
 	int i,index;
 
 	index = 1;
 
-	for(i=0;i<sizeof(buff);i++){
+	for(i=0;i<length;i++){
 		stuffed_buffer[i] = buff[i];
 		if(buff[i] == FLAG_RCV){
 			stuffed_buffer[index] = ESCAPE;
@@ -252,29 +347,22 @@ void stuffing(char *buff,char *stuffed_buffer){
 	}	 
 }
 
-int llwrite(int fd, char *buffer, int length){
-    /*int i,res,new_size;
-	char BCC2 = buffer[0];
+int llwrite(int fd,char *buffer , int length){
+	int i,res,new_size;
+	//unsigned char RR[255];
+	unsigned char BCC2;
 	char *stuffed_buffer;
-	char *trama;*/
-    int i;
-    
-    printf("HEX:\n\n");
-    
-    for(i=0; i<length; i++){
-        printf("0x%02x  %c\n", buffer[i], buffer[i]);
-    }
-    
-    printf("\n\n");
-    
-/*
+	char *trama;
+
 	// Calc BCC2
-	for(i=1;i<length;i++){
+	/*for(i=1;i<length;i++){
 		BCC2 ^= buffer[i];
-	}
+	}*/
+
+	BCC2 = xor_result(buffer, length);
 
 	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
-	trama = (char *) malloc(sizeof(char *) * length + 6);
+	trama = (char *) malloc(sizeof(char) * length + 6);
 	trama[0] = FLAG_RCV;
 	trama[1] = A;
 	trama[2] = (SNQNUM) ? C_I_1 : C_I_0;
@@ -284,23 +372,27 @@ int llwrite(int fd, char *buffer, int length){
 	trama[length + 5] = FLAG_RCV;
 	
 	// Stuffing da trama
-	new_size = size_stuffing(buffer);
-	stuffed_buffer = (char *) malloc(sizeof(char *) * (new_size+1));
-	stuffing(buffer,stuffed_buffer);
+	new_size = size_stuffing(trama,length + 6);
+	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
+	stuffing(trama,stuffed_buffer,length + 6);
 
-	// Envia trama TRAMA I
-	res = write(fd,stuffed_buffer,sizeof(stuffed_buffer));
+	for(i=0;i<length + 6;i++){
+		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
+	}
+
+	/* Envia trama TRAMA I*/							
+	res = write(fd,stuffed_buffer,length + 6);
 	printf("%d bytes sent\n",res);
 
-	// Free Memmory
+	/* Free Memmory*/
 	//free(trama);
 	//free(stuffed_buffer);
 	
-	//Espera pela resposta RR
+	/* Espera pela resposta RR*/				
 	//readpacket(fd,RR,255,TRANSMITTER);
 	
 	// Verificar RR
-*/
+
 
 	SNQNUM = (SNQNUM) ? 0 : 1;		
 
