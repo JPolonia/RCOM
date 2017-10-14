@@ -21,7 +21,7 @@ int main(int argc, char** argv)
 {
     int fd, e;
     char mode;
-    char file_name[] = "tou cheio da fome!";
+    char file_name[] = "adeus";
     char read_str[255];
     //int fd_file;  
 	

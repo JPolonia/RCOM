@@ -85,7 +85,7 @@ int initTermios(int fd){
 int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 	//int c=100;
 	int bytesRead;
-	
+	if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
 	//while(state!=4){
 		switch(state){
 			/*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
@@ -118,8 +118,8 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 					return index;
 		}
 	
-		if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII %c-  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
-		else printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+		if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+		
 		
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
@@ -364,15 +364,18 @@ int llwrite(int fd, char *buffer, int length){
 	memcpy(trama + 4,buffer,length); //strncpy(dest, src + beginIndex, endIndex - beginIndex);
 	trama[length + 4] = BCC2;
 	trama[length + 5] = FLAG_RCV;
+
+	// Print trama I
+	for(i=0;i<length + 6;i++)
+		printf("trama[%d] = 0x%02x %c \n",i,trama[i],trama[i]);
 	
 	// Stuffing da trama
 	new_size = size_stuffing(trama,length + 6);
-	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
-	stuffing(trama,stuffed_buffer,length + 6);
+	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size));
+	stuffing(trama,stuffed_buffer,new_size);
 
-	for(i=0;i<length + 6;i++){
+	for(i=0;i<new_size;i++)
 		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
-	}
 
 	/* Envia trama TRAMA I*/							
 	res = write(fd,stuffed_buffer,length + 6);
