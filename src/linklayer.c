@@ -86,7 +86,7 @@ int initTermios(int fd){
 
 
 
-void readpacket(int fd,unsigned char *buffer,int state, char mode, int* x){
+void readpacket(int fd,unsigned char *buffer,int state, char mode, int x){
 	//int c=100;
 	int res;
 	printf("STATE %d   - buufer[%d] - 0x%02x Expected: 0x%02x  res: %d\n",state, x,buffer[x],FLAG_RCV,res);
