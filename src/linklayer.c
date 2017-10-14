@@ -72,7 +72,7 @@ int initTermios(int fd){
 	ll->newtio.c_lflag = 0;
 	ll->newtio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
 	ll->newtio.c_cc[VMIN]     = 0;   /* blocking read until 5 chars received */
-/* VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
+	/* VTIME e VMIN devem ser alterados de forma a proteger com um temporizador a 
 	leitura do(s) próximo(s) caracter(es)*/
 	tcflush(fd, TCIOFLUSH);
 
@@ -84,45 +84,47 @@ int initTermios(int fd){
 	return 1;
 }
 
-
-
-void readpacket(int fd,unsigned char *buffer,int state, char mode, int x){
+int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 	//int c=100;
-	int res;
-	printf("STATE %d   - buufer[%d] - 0x%02x Expected: 0x%02x  res: %d\n",state, x,buffer[x],FLAG_RCV,res);
+	int bytesRead;
+	printf("STATE %d   - buffer[%d] - 0x%02x Expected: 0x%02x  bytesRead: %d\n",state, index,buffer[index],FLAG_RCV,bytesRead);
 	//while(state!=4){
 		switch(state){
-			case 1: res = read(fd,buffer+x,1);
-				if((buffer[x] == FLAG_RCV) && res){
-					x++;
-					state = 2;
-				}
-				break;
-			case 2: res = read(fd,buffer+x,1);
+			/*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
+			case 1: bytesRead = read(fd,buffer+index,1);
+					if((buffer[index] == FLAG_RCV) && bytesRead){
+						index++;
+						state = 2;
+					}
+					break;
 
-				if (((buffer[x])!= FLAG_RCV) && res){
-					x++;
-					state = 3;
-				}			
-				break;
-			case 3: res = read(fd,buffer+x,1);
-				if((buffer[x]) == FLAG_RCV){
-					state = 4;
-				} else x++;
-				break;
+			/*STATE 2 - READS 1 CHAR UNTIL RECEIVES DIFFERENT THAN FLAG_RCV*/
+			case 2: bytesRead = read(fd,buffer+index,1);
+					if (((buffer[index])!= FLAG_RCV) && bytesRead){
+						index++;
+						state = 3;
+					}			
+					break;
+
+			/*STATE 3 - READS 1 CHAR OF DATA UNTIL RECEIVES A FLAG_RCV*/
+			case 3: bytesRead = read(fd,buffer+index,1);
+					if((buffer[index]) == FLAG_RCV){
+						state = 4;
+					} else index++;
+					break;
+			
+			/*STATE 4 - SUCESSFULLY READ BUFFER! RETURN LENGTH OF BUFFER*/
 			case 4: 
-				printf("OK!\n");
-				x=0; 			
-				return;
+					printf("OK!\n");
+					return index;
 		}
 		
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		
-		return;
+		return -1;
 	}
 	//}
-
-	readpacket(fd, buffer, state, mode, x);
+	readpacket(fd, buffer, state, mode, index);
 }
 
 int llopen(int fd, char flag){
@@ -130,7 +132,8 @@ int llopen(int fd, char flag){
 	unsigned char msg[5];
 	unsigned char buff[5];
 	int error;
-	int res;
+	int bytesRead;
+	int bytesWritten;
 
 	msg[0] = FLAG_RCV;
 	msg[1] = A;
@@ -149,10 +152,10 @@ int llopen(int fd, char flag){
 							 		alarmFlag=0;
 								}
 								/*Envia trama SET*/							
-								res = write(fd,msg,5);
-								printf("%d bytes sent\n",res);
+								bytesWritten = write(fd,msg,5);
+								printf("%d bytes sent\n",bytesWritten);
 								/*Espera pela resposta UA*/				
-								readpacket(fd,buff,1,TRANSMITTER,0);
+								bytesRead = readpacket(fd,buff,1,TRANSMITTER,0);
 								error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
 								
 							}							
@@ -160,7 +163,7 @@ int llopen(int fd, char flag){
 
 		case RECEIVER: 		printf("RECEIVER\n");
 							/*Espera pela trama SET*/
-							readpacket(fd,buff,1,RECEIVER,0);
+							bytesRead = readpacket(fd,buff,1,RECEIVER,0);
 							error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
 							if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
 							else {
@@ -168,7 +171,7 @@ int llopen(int fd, char flag){
 								msg[2] = C_UA;
 								msg[3] = A^C_UA;
 								res = write(fd,msg,5);
-								printf("%d bytes sent\n",res);}
+								printf("%d bytes sent\n",bytesWritten);}
 							break;
 
 		default: 		
@@ -190,17 +193,17 @@ int llopen(int fd, char flag){
 int destuffing(char *buff, char *buff_destuff){
 	int i=1, j=0;
 
-	buff_destuff[j]=0x7e; 
+	buff_destuff[j]=FLAG_RCV; 
 	j++;
 
-	while(buff[i]!=0x7e){
-		if(buff[i]==0x7d && buff[i+1]==0x5e){
-			buff_destuff[j]=0x7e;
+	while(buff[i]!=FLAG_RCV){
+		if(buff[i]==ESCAPE && buff[i+1]==ESCAPE1){
+			buff_destuff[j]=FLAG_RCV;
 			i=i+2;
 			j++;		
 		}
-		else if(buff[i]==0x7d && buff[i+1]==0x5d){
-			buff_destuff[j]=0x7d;
+		else if(buff[i]==ESCAPE && buff[i+1]==ESCAPE2){
+			buff_destuff[j]=ESCAPE;
 			i=i+2;
 			j++;		
 		}
@@ -210,7 +213,7 @@ int destuffing(char *buff, char *buff_destuff){
 			j++;
 		}
 	}
-	buff_destuff[j]=0x7e; 
+	buff_destuff[j]=FLAG_RCV; 
 	j++;
 
 	return j; 
@@ -233,13 +236,13 @@ int llread(int fd, char *buffer){
 
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
-	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
+	unsigned char RR[5] = {FLAG_RCV, 0x03, 0x01, 0x03^0x01, FLAG_RCV};
 	int tam=0, state=1, i, x=0;
 
 	while(state!=7){
-		printf("STATE %d - llread\n",state);
+		printf("llread STATE %d - \n",state);
 		switch(state){
-			case 1:	readpacket(fd, buff, 1, RECEIVER, &x);
+			case 1:	bytesRead = readpacket(fd, buff, 1, RECEIVER, &x);
 					state=2;
 
 					for(i=0;i< + 6;i++){
@@ -277,7 +280,7 @@ int llread(int fd, char *buffer){
 						break;
 						
 			case 5:	if(buff[2]==0x40 && ll->sequenceNumber==0){
-							//RR = {0x7E, 0x03, 0x21, , 0x7E};
+							//RR = {FLAG_RCV, 0x03, 0x21, , FLAG_RCV};
 							RR[2]=0x21;
 			    			RR[3]=0x03^0x21;
 							write(fd, RR, 5);
@@ -297,7 +300,7 @@ int llread(int fd, char *buffer){
 							}
 						else if(buff[2]==0x40){
 							ll->sequenceNumber=0;
-							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
+							//RR = {FLAG_RCV, 0x03, 0x21, 0x03^0x21, FLAG_RCV};
 			    			RR[2]=0x21;
 			    			RR[3]=0x03^0x21;
 							write(fd, RR, 5);
@@ -381,7 +384,7 @@ int llwrite(int fd, char *buffer, int length){
 	//free(stuffed_buffer);
 	
 	/* Espera pela resposta RR*/				
-	//readpacket(fd,RR,255,TRANSMITTER);
+	// readpacket(fd,RR,255,TRANSMITTER);
 	
 	// Verificar RR
 

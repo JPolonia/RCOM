@@ -51,7 +51,7 @@ int main(int argc, char** argv)
     
 
     //Initialize alarm
-	  initAlarm();
+    initAlarm();
 
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
