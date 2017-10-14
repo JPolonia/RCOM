@@ -122,7 +122,7 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 		return -1;
 	}
 	//}
-	readpacket(fd, buffer, state, mode, index);
+	return readpacket(fd, buffer, state, mode, index);
 }
 
 int llopen(int fd, char flag){
