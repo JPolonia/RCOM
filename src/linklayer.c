@@ -118,8 +118,8 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 					return index;
 		}
 	
-		if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII %d-  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
-		else printf("STATE 1 - WAITING FOR FLAG_RCV");
+		if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII %c-  bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+		else printf("STATE 1 - WAITING FOR FLAG_RCV\n");
 		
 		
 	if(alarmFlag && (mode==TRANSMITTER) ){ 		

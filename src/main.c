@@ -55,15 +55,15 @@ int main(int argc, char** argv)
 
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
-    llopen(fd, mode);
-    switch(mode){
-        case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
-                          break;
-        case RECEIVER:    llread(fd,read_str);
-                          //printf("STR: %s \n",read_str);
-                          break;
-      }
-    
+    if(llopen(fd, mode)){
+        switch(mode){
+            case TRANSMITTER: llwrite(fd, file_name,strlen(file_name));
+                            break;
+            case RECEIVER:    llread(fd,read_str);
+                            //printf("STR: %s \n",read_str);
+                            break;
+        }
+    }
 
     sleep(1);
    
