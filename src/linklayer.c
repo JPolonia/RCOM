@@ -146,38 +146,57 @@ int llopen(int fd, unsigned char mode){
 	
 	printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
-		case TRANSMITTER:   printf("TRANSMISTTER\n");
-							msg[2] = C_SET;
-							msg[3] = A^C_SET;
-							alarmCounter =	0;
-							error = 1;
-							while(alarmCounter < ll->numTransmissions && buff[4] != FLAG_RCV && error){
-								if(alarmFlag){
-							  		alarm(ll->timeout); //activa alarme de 3s
-							 		alarmFlag=0;
-								}
-								/*Envia trama SET*/							
-								res = write(fd,msg,5);
-								printf("%d bytes sent\n",res);
-								/*Espera pela resposta UA*/				
-								readpacket(fd,buff,TRANSMITTER);
-								error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
-								
-							}							
-							break;
+		case TRANSMITTER:
+            printf("TRANSMISTTER\n");
+            msg[2] = C_SET;
+            msg[3] = A^C_SET;
+            alarmCounter =    1;
+            error = 1;
+            while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+                if(alarmFlag){
+                    alarm(ll->timeout); //activa alarme de 3s
+                    alarmFlag=0;
+                }
+                /*Envia trama SET*/
+                res = write(fd,msg,5);
+                printf("%d bytes sent\n",res);
+                /*Espera pela resposta UA*/
+                readpacket(fd,buff,TRANSMITTER);
+                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
+                
+            }
+            break;
 
-		case RECEIVER: 		printf("RECEIVER\n");
-							/*Espera pela trama SET*/
-							readpacket(fd,buff,RECEIVER);
-							error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
-							if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
-							else {
-								/*Envia resposta UA*/
-								msg[2] = C_UA;
-								msg[3] = A^C_UA;
-								res = write(fd,msg,5);
-								printf("%d bytes sent\n",res);}
-							break;
+		case RECEIVER:
+            printf("RECEIVER\n");
+            
+            while(1){ //Espera pela trama SET
+                readpacket(fd,buff,RECEIVER);
+                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+                if (error) {
+                    printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                    continue;
+                }
+                else {
+                    /*Envia resposta UA*/
+                    msg[2] = C_UA;
+                    msg[3] = A^C_UA;
+                    res = write(fd,msg,5);
+                    printf("%d bytes sent\n",res);
+                    break;
+                }
+            }
+            
+            /*
+            readpacket(fd,buff,RECEIVER);
+            error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+            if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+            else {
+                msg[2] = C_UA;
+                msg[3] = A^C_UA;
+                res = write(fd,msg,5);
+                printf("%d bytes sent\n",res);}*/
+            break;
 
 		default: 		
 							return -1;
