@@ -240,7 +240,7 @@ unsigned char xor_result(char *array, int tam){ //funciona!!
 int llread(int fd, char *buffer){
 
 	unsigned char buff[MAX_SIZE]; //para receber trama inteira
-	char buff_destuff[MAX_SIZE];  //para receber campo de dados + BCC
+	char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
     unsigned char REJ[5] = {0x7e, 0x03, 0x05, 0x03^0x05, 0x7e};
 	int tam = 1, state=1, i = 0;
@@ -376,6 +376,8 @@ int llwrite(int fd,char *buffer , int length){
     int error = 1;
     int bytesWritten = 0;
     unsigned char ack[MAX_SIZE];
+    
+    assert( ((2*(length+1)) + 5) <=  MAX_SIZE); //verifica que buffer cabe na trama
     
     BCC2 = xor_result(buffer, length); //calcula BCC2
     

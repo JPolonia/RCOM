@@ -9,7 +9,8 @@
 #define FALSE 0
 #define TRUE 1
 
-#define DATA_LEN 256
+#define DATA_LEN  (((MAX_SIZE - 5) / 2) - 1)
+
 #define TRAILER_SIZE 4
 
 int int_pow(int base, int exp){ // funciona
