@@ -37,7 +37,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
 //mode = TRANSMITTER ou RECEIVER
 
 
-int llopen(int fd, unsigned char flag);
+int llopen(int fd, unsigned char mode);
 
 int llread(int fd, char *buffer);
 

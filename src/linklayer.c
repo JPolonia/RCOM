@@ -133,7 +133,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 	//readpacket(fd, buffer, state, mode, x);
 }
 
-int llopen(int fd, unsigned char flag){
+int llopen(int fd, unsigned char mode){
 	
 	unsigned char msg[5];
 	unsigned char buff[5];
@@ -145,7 +145,7 @@ int llopen(int fd, unsigned char flag){
 	msg[4] = FLAG_RCV;
 	
 	printf("*** Trying to establish a connection. ***\n");
-	switch(flag){
+	switch(mode){
 		case TRANSMITTER:   printf("TRANSMISTTER\n");
 							msg[2] = C_SET;
 							msg[3] = A^C_SET;
@@ -236,7 +236,7 @@ int llread(int fd, char *buffer){
 	unsigned char buff[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
 	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
-	int tam, state=1, i;
+	int tam = 1, state=1, i;
 
 	while(state!=7){
 		printf("STATE %d - llread\n",state);
