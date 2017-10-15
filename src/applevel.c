@@ -111,13 +111,10 @@ int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *
     buffer[i] = (char) seqNumber; //Sequence Number N
     i++;
     
-    printf("In dataPacket():\nseqNumber = %d\ntamanho=%d\n", seqNumber, tamanho);
     buffer[i] = tamanho >> 8;  //L2
-    printf("buffer[2] = 0x%02x\n", buffer[i]);
     i++;
     
     buffer[i] = tamanho & 0b11111111; //L1
-    printf("buffer[3] = 0x%02x\n", buffer[i]);
     i++;
     
     for(j = 0; j< tamanho; j++){
@@ -183,8 +180,6 @@ int getPacketSize(unsigned char * packet){
     int packetSize = 0;
     packetSize = packet[2] * 256;
     packetSize = packetSize + packet[3];
-    printf("packet[2] = 0x%02x\n", packet[2]);
-    printf("packet[3] = 0x%02x\n", packet[3]);
     return packetSize;
 }
 
@@ -212,17 +207,12 @@ size_t receiveData(FILE *file, int fd){ //funciona
             
             packetSize = getPacketSize(packet);
             
-            printf("packetSize = %d\n", packetSize);
-            printf("packetSizeRead = %d\n", packetSizeRead);
-            
             assert(packetSize == (packetSizeRead-4)); //verifica que o pacote tem a quantidade de dados que vem descrita no cabeçalho
             
             bytesWritten = fwrite(&packet[4], 1, packetSizeRead-4, file);
             assert(bytesWritten == (packetSizeRead-4) ); //verifica que escreveu tudo
             
             total = total + bytesWritten;
-            
-            printf("Received Packet with seqNumber = %d\n", seqNumber);
             
             seqNumber++;
             if(seqNumber == 256) seqNumber = 0;
@@ -259,7 +249,6 @@ int receiveStart(int fd,char *fileName){
             if(packet[i] == 0x00){ // file size
                 i++;
                 paramLen = packet[i];
-                printf("paramLen = %d\n", paramLen);
                 
                 i++;
                 tamanho = getFileSize(&packet[i], paramLen);
@@ -268,7 +257,6 @@ int receiveStart(int fd,char *fileName){
                 assert(packet[i] == 0x01); //file name
                 i++;
                 paramLen = packet[i];
-                printf("paramLen = %d\n", paramLen);
                 i++;
                 
                 for(j = 0; j< paramLen; j++){
