@@ -78,6 +78,9 @@ int main(int argc, char** argv)
         llopen(fd, TRANSMITTER);
         
         llwrite(fd, dataToSend, 10);
+        llwrite(fd, dataToSend, 10);
+        llwrite(fd, dataToSend, 10);
+
 		
 	}
 	else if(mode == RECEIVER){
@@ -91,6 +94,16 @@ int main(int argc, char** argv)
         
         llopen(fd, RECEIVER);
         
+        dataReceivedLen = llread(fd, dataReceived);
+        
+        for(i = 0; i < dataReceivedLen; i++){
+            printf("dataReceived[%d] = 0x%02x\n", i, dataReceived[i]);
+        }
+        dataReceivedLen = llread(fd, dataReceived);
+        
+        for(i = 0; i < dataReceivedLen; i++){
+            printf("dataReceived[%d] = 0x%02x\n", i, dataReceived[i]);
+        }
         dataReceivedLen = llread(fd, dataReceived);
         
         for(i = 0; i < dataReceivedLen; i++){
