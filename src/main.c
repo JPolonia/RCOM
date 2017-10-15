@@ -62,9 +62,6 @@ int main(int argc, char** argv)
         printf("Insira o caminho para o ficheiro que pretende transferir:\n");
         scanf("%s", fileName);
         
-        printf("%s\n", fileName);
-        assert(0==1);
-        
         llopen(fd, TRANSMITTER);
         
         f = openFileTransmmiter(fileName); //abre ficheiro
