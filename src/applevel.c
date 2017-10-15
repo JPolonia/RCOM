@@ -116,7 +116,7 @@ int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *
     printf("buffer[2] = 0x%02x\n", buffer[i]);
     i++;
     
-    buffer[i] = tamanho & ((2^8)-1); //L1
+    buffer[i] = tamanho & 0b11111111; //L1
     printf("buffer[3] = 0x%02x\n", buffer[i]);
     i++;
     
