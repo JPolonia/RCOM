@@ -58,10 +58,10 @@ int main(int argc, char** argv)
 
 	if(mode == TRANSMITTER){
         
-        llopen(fd, TRANSMITTER);
-        
         printf("Insira o caminho para o ficheiro que pretende transferir:\n");
         scanf("%s\n", fileName);
+        
+        llopen(fd, TRANSMITTER);
         
         f = openFileTransmmiter(fileName); //abre ficheiro
         
