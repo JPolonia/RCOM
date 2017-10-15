@@ -9,9 +9,12 @@
 #define FALSE 0
 #define TRUE 1
 
-#define DATA_LEN  (((MAX_SIZE - 5) / 2) - 1)
+#define PACKET_LEN  (((MAX_SIZE - 5) / 2) - 1)
 
 #define TRAILER_SIZE 4
+
+#define DATA_LEN  (PACKET_LEN - TRAILER_SIZE)
+
 
 int int_pow(int base, int exp){ // funciona
     int result = 1;
@@ -142,7 +145,7 @@ FILE *openFileReceiver(char *pathToFile){ //funciona
 
 size_t sendData(FILE *file, int fd){ //funciona
     char buffer[DATA_LEN];
-    char packet[DATA_LEN + TRAILER_SIZE];
+    char packet[PACKET_LEN];
     size_t bytesRead = 0;
     size_t total = 0;
     
@@ -173,7 +176,7 @@ int getPacketSize(char * packet){
 }
 
 size_t receiveData(FILE *file, int fd){ //funciona
-    char packet[DATA_LEN + TRAILER_SIZE];
+    char packet[PACKET_LEN];
     size_t bytesWritten = 0;
     size_t total = 0;
     
