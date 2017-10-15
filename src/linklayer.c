@@ -283,6 +283,9 @@ int llread(int fd, char *buffer){
 								
 			case 4: //faz destuffing e verifica BCC2
                 tam = destuffing(buff, buff_destuff); //tam = dados+BCC2
+                
+                printf("buff_destuff[tam-1] = BCC2 = 0x%02x\nxor_result = 0x%02x\n", buff_destuff[tam-1], xor_result(buff_destuff, tam-1));
+                
                 if( buff_destuff[tam-1] == xor_result(buff_destuff, tam-1) ) { //dados validos
                     for( i = 0; i< tam-1; i++){ //preenche buffer de retorno
                         buffer[i] = buff_destuff[i];
