@@ -319,7 +319,7 @@ int llread(int fd, char *buffer){
             default:
                 break;
 			}
-		}
+		}    
 	return tam-1;
 }
 
