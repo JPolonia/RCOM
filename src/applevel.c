@@ -176,7 +176,10 @@ int getSeqNumber(unsigned char *packet){
 }
 
 int getPacketSize(unsigned char * packet){
-    return (256 * (int)packet[2]) + (int)packet[3];
+    int packetSize = 0;
+    packetSize = packet[2] << 8;
+    packetSize = packetSize + packet[3];
+    return packetSize;
 }
 
 size_t receiveData(FILE *file, int fd){ //funciona
@@ -202,6 +205,9 @@ size_t receiveData(FILE *file, int fd){ //funciona
             assert(seqNumber == getSeqNumber(packet)); //verifica que recebemos o pacote de dados certo
             
             packetSize = getPacketSize(packet);
+            
+            printf("packetSize = %d\n", packetSize);
+            printf("packetSizeRead = %d\n", packetSizeRead);
             
             assert(packetSize == (packetSizeRead-4)); //verifica que o pacote tem a quantidade de dados que vem descrita no cabeçalho
             
