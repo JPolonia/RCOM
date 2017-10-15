@@ -37,7 +37,7 @@ int numberOfOctets(int number){  //funciona
     return n;
 }
 
-int controlPacket(char *buffer, int fileSize, char *fileName, char C){  //funciona acho :P
+int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned char C){  //funciona acho :P
     int i = 0;
     int j = 0;
     int exp = 0;
@@ -81,7 +81,7 @@ int controlPacket(char *buffer, int fileSize, char *fileName, char C){  //funcio
 
 int sendStartPacket(int fd,int fileSize, char *fileName){ //funciona em principio
     
-    char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    unsigned char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
     
     int size = controlPacket(buffer, fileSize, fileName, 0x02);
     
@@ -90,9 +90,9 @@ int sendStartPacket(int fd,int fileSize, char *fileName){ //funciona em principi
     return size;
 }
 
-int sendEndPacket(int fd, int fileSize, char *fileName){  //funciona em principio
+int sendEndPacket(int fd, int fileSize,char *fileName){  //funciona em principio
     
-    char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    unsigned char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
     
     int size = controlPacket(buffer, fileSize, fileName, 0x03);
     
@@ -101,7 +101,7 @@ int sendEndPacket(int fd, int fileSize, char *fileName){  //funciona em principi
     return controlPacket(buffer, fileSize, fileName, 0x03);
 }
 
-int dataPacket(char *buffer, int seqNumber, int tamanho, char *data ){ //falta verificar
+int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *data ){ //falta verificar
     int i = 0;
     int j = 0;
     
@@ -144,8 +144,8 @@ FILE *openFileReceiver(char *pathToFile){ //funciona
 }
 
 size_t sendData(FILE *file, int fd){ //funciona
-    char buffer[DATA_LEN];
-    char packet[PACKET_LEN];
+    unsigned char buffer[DATA_LEN];
+    unsigned char packet[PACKET_LEN];
     size_t bytesRead = 0;
     size_t total = 0;
     
@@ -171,16 +171,16 @@ size_t sendData(FILE *file, int fd){ //funciona
     return total;
 }
 
-int getSeqNumber(char *packet){
+int getSeqNumber(unsigned char *packet){
     return (int)packet[1];
 }
 
-int getPacketSize(char * packet){
+int getPacketSize(unsigned char * packet){
     return (256 * (int)packet[2]) + (int)packet[3];
 }
 
 size_t receiveData(FILE *file, int fd){ //funciona
-    char packet[PACKET_LEN];
+    unsigned char packet[PACKET_LEN];
     size_t bytesWritten = 0;
     size_t total = 0;
     
@@ -223,7 +223,7 @@ size_t receiveData(FILE *file, int fd){ //funciona
     return total;
 }
 
-int getFileSize(char *buff, int sizeBuff){
+int getFileSize(unsigned char *buff, int sizeBuff){
     int fileSize = 0;
     int i;
     for(i = 0; i<sizeBuff ; i++){
@@ -232,12 +232,12 @@ int getFileSize(char *buff, int sizeBuff){
     return fileSize;
 }
 
-int receiveStart(int fd, char *fileName){
+int receiveStart(int fd,char *fileName){
     int tamanho = 0;
     int i = 0;
     int j = 0;
     int paramLen = 0;
-    char packet[DATA_LEN + TRAILER_SIZE];
+    unsigned char packet[DATA_LEN + TRAILER_SIZE];
     while(1){
         llread(fd, packet);
         i = 0;

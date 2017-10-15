@@ -22,7 +22,7 @@ linkLayer* ll;
 int main(int argc, char** argv)
 {
     int fd, e;
-    char mode;
+    unsigned char mode;
     int fileSize = 0;
     char fileName[30];
     FILE *f;

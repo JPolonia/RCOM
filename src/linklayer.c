@@ -201,7 +201,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 	
 }
 
-int destuffing( unsigned char *buff, char *buffDestuff){ //Funciona
+int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
 	int i=4, j=0;
 
 	while(buff[i]!=0x7e){ //OK
@@ -224,7 +224,7 @@ int destuffing( unsigned char *buff, char *buffDestuff){ //Funciona
 	return j; 
 }
 
-unsigned char xor_result(char *array, int tam){ //funciona!!
+unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
 	unsigned char xor;
 	int i=2;
 
@@ -237,10 +237,10 @@ unsigned char xor_result(char *array, int tam){ //funciona!!
 }
 
 
-int llread(int fd, char *buffer){
+int llread(int fd,unsigned char *buffer){
 
 	unsigned char buff[MAX_SIZE]; //para receber trama inteira
-	char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
+	unsigned char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
     unsigned char REJ[5] = {0x7e, 0x03, 0x05, 0x03^0x05, 0x7e};
 	int tam = 1, state=1, i = 0;
@@ -326,7 +326,7 @@ int llread(int fd, char *buffer){
 	return tam-1;
 }
 
-int size_stuffing(char *buff, int length){
+int size_stuffing(unsigned char *buff, int length){
 	int i,new_size=0;
 	for(i=1;i<length-1;i++){
 		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
@@ -334,7 +334,7 @@ int size_stuffing(char *buff, int length){
 	return length + new_size;
 }
 
-int stuffing(char *buff, unsigned char BCC2, char *stuffedBuffer, int length){ //falta verificar com BCC2
+int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
 	int i = 0, j = 0;
 
 	for(i=0;i<length;i++){ //OK
@@ -370,10 +370,10 @@ int stuffing(char *buff, unsigned char BCC2, char *stuffedBuffer, int length){ /
 	return j;	 
 }
 
-int llwrite(int fd,char *buffer , int length){
+int llwrite(int fd, unsigned char *buffer , int length){
 
     unsigned char BCC2;
-    char trama[MAX_SIZE];
+    unsigned char trama[MAX_SIZE];
     int dataAndBCC2Length = 0;
     int frameSize = 0;
     int error = 1;
