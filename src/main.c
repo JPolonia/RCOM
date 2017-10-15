@@ -61,16 +61,16 @@ int main(int argc, char** argv)
 
 	if(mode == TRANSMITTER){
 		
-		dataToSend[0] = 'a';
-		dataToSend[1] = 'a';
-		dataToSend[2] = 'b';
-		dataToSend[3] = 'c';
-		dataToSend[4] = 'd';
-		dataToSend[5] = 'e';
-		dataToSend[6] = 'f';
-		dataToSend[7] = 'g';
-		dataToSend[8] = 'h';
-		dataToSend[9] = 'h';
+		dataToSend[0] = 0x01;
+		dataToSend[1] = 0x02;
+		dataToSend[2] = 0x03;
+		dataToSend[3] = 0x7e;
+		dataToSend[4] = 0x04;
+		dataToSend[5] = 0x05;
+		dataToSend[6] = 0x7d;
+		dataToSend[7] = 0x06;
+		dataToSend[8] = 0x07;
+		dataToSend[9] = 0x08;
 
 		//assert(write(fd, dataToSend, 10) == 10);
      

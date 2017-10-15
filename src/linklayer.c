@@ -299,7 +299,7 @@ int llread(int fd, char *buffer){
                         RR[3] = RR[1]^RR[2];
                         assert(write(fd, RR, 5) == 5);
                     }
-                    printf("*** Received valid frame ***");
+                    printf("*** Received valid frame ***\n");
                     state = 5;
                 }
                 else { //dados invalidos, enviar REJ
@@ -368,50 +368,6 @@ int stuffing(char *buff, unsigned char BCC2, char *stuffedBuffer, int length){ /
 }
 
 int llwrite(int fd,char *buffer , int length){
-    /*
-	int i,res,new_size;
-	unsigned char BCC2;
-	char *stuffed_buffer;
-	char *trama;
-
-	BCC2 = xor_result(buffer, length);
-
-	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
-	trama = (char *) malloc(sizeof(char) * length + 6);
-	trama[0] = FLAG_RCV;
-	trama[1] = A;
-	trama[2] = (SNQNUM) ? C_I_1 : C_I_0;
-	trama[3] = trama[1]^trama[2];
-	memcpy(trama + 4,buffer,length); //strncpy(dest, src + beginIndex, endIndex - beginIndex);
-	trama[length + 4] = BCC2;
-	trama[length + 5] = FLAG_RCV;
-	
-	// Stuffing da trama
-	new_size = size_stuffing(trama,length + 6);
-	stuffed_buffer = (char *) malloc(sizeof(char) * (new_size+1));
-	stuffing(trama,stuffed_buffer,length + 6);
-
-	for(i=0;i<length + 6;i++){
-		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
-	}
-
-	// Envia trama TRAMA I
-	res = write(fd,stuffed_buffer,length + 6);
-	printf("%d bytes sent\n",res);
-
-	// Free Memmory
-	//free(trama);
-	//free(stuffed_buffer);
-	
-	// Espera pela resposta RR
-	//readpacket(fd,RR,255,TRANSMITTER);
-	
-	// Verificar RR
-
-
-	SNQNUM = (SNQNUM) ? 0 : 1;		
-     */
-    
 
     unsigned char BCC2;
     char trama[MAX_SIZE];
