@@ -113,8 +113,11 @@ int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *
     
     printf("In dataPacket():\nseqNumber = %d\ntamanho=%d\n", seqNumber, tamanho);
     buffer[i] = tamanho >> 8;  //L2
+    printf("buffer[2] = 0x%02x\n", buffer[i]);
     i++;
+    
     buffer[i] = tamanho & ((2^8)-1); //L1
+    printf("buffer[3] = 0x%02x\n", buffer[i]);
     i++;
     
     for(j = 0; j< tamanho; j++){
@@ -180,6 +183,8 @@ int getPacketSize(unsigned char * packet){
     int packetSize = 0;
     packetSize = packet[2] * 256;
     packetSize = packetSize + packet[3];
+    printf("packet[2] = 0x%02x\n", packet[2]);
+    printf("packet[3] = 0x%02x\n", packet[3]);
     return packetSize;
 }
 
