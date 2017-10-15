@@ -158,7 +158,11 @@ size_t sendData(FILE *file, int fd){ //funciona
         packetSize = dataPacket(packet, seqNumber, bytesRead, buffer);
         assert(packetSize == (bytesRead + TRAILER_SIZE) );
         
-        while(llwrite(fd, packet, packetSize) < 0 );
+        
+        
+        while(llwrite(fd, packet, packetSize) < 0 ){
+            printf("Bloqueado porque llwrite retorna < 0...\n");
+        }
         
         total = total + bytesRead;
         seqNumber++;
@@ -190,9 +194,6 @@ size_t receiveData(FILE *file, int fd){ //funciona
     while(receivedEnd == 0){
         packetSizeRead = llread(fd, packet);
         
-        printf("Received Packet with seqNumber = %d\n", seqNumber);
-        
-        
         if(packet[0] == 0x03){ //flag de end
             receivedEnd = 1;
             continue;
@@ -209,7 +210,7 @@ size_t receiveData(FILE *file, int fd){ //funciona
             
             total = total + bytesWritten;
             
-            //printf("Received Packet with seqNumber = %d\n", seqNumber);
+            printf("Received Packet with seqNumber = %d\n", seqNumber);
             
             seqNumber++;
             if(seqNumber == 256) seqNumber = 0;
