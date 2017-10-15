@@ -151,7 +151,7 @@ int llopen(int fd, unsigned char mode){
 							msg[3] = A^C_SET;
 							alarmCounter =	0;
 							error = 1;
-							while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+							while(alarmCounter < ll->numTransmissions && buff[4] != FLAG_RCV && error){
 								if(alarmFlag){
 							  		alarm(ll->timeout); //activa alarme de 3s
 							 		alarmFlag=0;
