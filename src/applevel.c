@@ -204,6 +204,9 @@ size_t receiveData(FILE *file, int fd){ //funciona
             assert(bytesWritten == (packetSizeRead-4) ); //verifica que escreveu tudo
             
             total = total + bytesWritten;
+            
+            printf("Received Packet with seqNumber = %d\n", seqNumber);
+            
             seqNumber++;
             if(seqNumber == 256) seqNumber = 0;
         }

@@ -401,7 +401,7 @@ int llwrite(int fd,char *buffer , int length){
         }
         
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
-        printf("%d bytes sent\n", bytesWritten);
+        printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
         
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
