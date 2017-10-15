@@ -21,15 +21,16 @@ linkLayer* ll;
 
 int main(int argc, char** argv)
 {
-    int fd, e; //i; //dataSize = 0;
+    int fd, e, i; //dataSize = 0;
     char mode;
 	//unsigned char BCC = 0;
 	//char c;
-	//char dataToSend[200];
-	//unsigned char dataReceived[200];
+	char dataToSend[200];
+    char dataReceived[200];
     //char file_name[] = "ola";
     //char read_str[255];
-    //int fd_file;  
+    //int fd_file;
+    int dataReceivedLen = 0;
 	
 
     if ( (argc < 3) || 
@@ -59,8 +60,8 @@ int main(int argc, char** argv)
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
 	if(mode == TRANSMITTER){
-		/*
-		dataToSend[0] = 0x7e;
+		
+		dataToSend[0] = 'a';
 		dataToSend[1] = 'a';
 		dataToSend[2] = 'b';
 		dataToSend[3] = 'c';
@@ -69,12 +70,14 @@ int main(int argc, char** argv)
 		dataToSend[6] = 'f';
 		dataToSend[7] = 'g';
 		dataToSend[8] = 'h';
-		dataToSend[9] = 0x7e;
+		dataToSend[9] = 'h';
 
-		assert(write(fd, dataToSend, 10) == 10);	
-         */
+		//assert(write(fd, dataToSend, 10) == 10);
+     
         
         llopen(fd, TRANSMITTER);
+        
+        llwrite(fd, dataToSend, 10);
 		
 	}
 	else if(mode == RECEIVER){
@@ -87,6 +90,12 @@ int main(int argc, char** argv)
 		*/
         
         llopen(fd, RECEIVER);
+        
+        dataReceivedLen = llread(fd, dataReceived);
+        
+        for(i = 0; i < dataReceivedLen; i++){
+            printf("dataReceived[%d] = 0x%02x\n", i, dataReceived[i]);
+        }
 
 	}
 	/*

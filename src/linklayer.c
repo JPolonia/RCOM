@@ -133,7 +133,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 	//readpacket(fd, buffer, state, mode, x);
 }
 
-int llopen(int fd, unsigned char mode){
+int llopen(int fd, unsigned char mode){ //funciona
 	
 	unsigned char msg[5];
 	unsigned char buff[5];
@@ -146,7 +146,7 @@ int llopen(int fd, unsigned char mode){
 	
 	printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
-		case TRANSMITTER:
+		case TRANSMITTER: //OK
             printf("TRANSMISTTER\n");
             msg[2] = C_SET;
             msg[3] = A^C_SET;
@@ -167,14 +167,13 @@ int llopen(int fd, unsigned char mode){
             }
             break;
 
-		case RECEIVER:
+		case RECEIVER: //OK
             printf("RECEIVER\n");
-            
             while(1){ //Espera pela trama SET
                 readpacket(fd,buff,RECEIVER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
                 if (error) {
-                    printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                    printf("Received an invalid frame");
                     continue;
                 }
                 else {
@@ -186,30 +185,18 @@ int llopen(int fd, unsigned char mode){
                     break;
                 }
             }
-            
-            /*
-            readpacket(fd,buff,RECEIVER);
-            error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
-            if (error) printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
-            else {
-                msg[2] = C_UA;
-                msg[3] = A^C_UA;
-                res = write(fd,msg,5);
-                printf("%d bytes sent\n",res);}*/
             break;
-
-		default: 		
-							return -1;
+            
+		default:
+            return -1;
 	}
 
 	if(error){
 		printf("*** Error establishing a connection: ***\n");
-		printf("Espected: %d (C_SET)  Received: %d\n",C_SET,buff[2]);
-		printf("Espected: %d (BCC)  Received: %d\n",buff[1]^buff[2],buff[3]);
 		return -1;}		
-	
-	printf("*** Successfully established a connection. ***\n");
-	//printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+    else{
+        printf("*** Successfully established a connection. ***\n");
+    }
 	return 1; 
 	
 }
@@ -252,86 +239,88 @@ unsigned char xor_result(char *array, int tam){ //funciona!!
 
 int llread(int fd, char *buffer){
 
-	unsigned char buff[MAX_SIZE];
-	char buff_destuff[MAX_SIZE];
+	unsigned char buff[MAX_SIZE]; //para receber trama inteira
+	char buff_destuff[MAX_SIZE];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
-	int tam = 1, state=1, i;
+    unsigned char REJ[5] = {0x7e, 0x03, 0x05, 0x03^0x05, 0x7e};
+	int tam = 1, state=1, i = 0;
 
-	while(state!=7){
+	while(state!=5){
 		printf("STATE %d - llread\n",state);
 		switch(state){
-			case 1:	readpacket(fd, buff, RECEIVER);
-					state=2;
-
-					for(i=0;i< + 6;i++){
-					printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
-					}
-
-					break;
+			case 1:  //recebe trama
+                readpacket(fd, buff, RECEIVER);
+                state=2;
+                /*for(i=0;i< + 6;i++){
+                    printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+                }*/
+                break;
 		
-			case 2:	tam = destuffing(buff, buff_destuff);
-						//if(buff_destuff[tam-1]!=xor_result(buff_destuff, tam)) {
-							//REG
-							//state=1;  // verificar!!!
-							//}
-						//else 
+			case 2:  //verifica se tem erro no cabeçalho
+                if(buff[3]==(buff[1]^buff[2]))
+                    state=3;
+                else
+                    state=1;
+                break;
 
-					for(i=0;i<tam + 6;i++){
-					printf("buff_destuff[%d] = 0x%02x %c \n",i,buff_destuff[i],buff_destuff[i]);
-					}
-					return 1;
-					state=3;
-						break;
-
-			case 3:	if(buff[3]!=(buff[1]^buff[2]))
-							state=1;
-						else 
-							state=4;
-						break;
+			case 3:  //verifica se trama é repetida
+                if( buff[2]==0x00 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
+                    RR[2] = 0x21; //queremos seq 1
+                    RR[3] = RR[1]^RR[2];
+                    assert(write(fd, RR, 5) == 5);
+                    state=1;
+                }
+                else if(buff[2]==0x40 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
+                    RR[2] = 0x01; //queremos seq 0
+                    RR[3] = RR[1]^RR[2];
+                    assert(write(fd, RR, 5) == 5);
+                    state=1;
+                }
+                else{ //recebemos o que queriamos
+                    state=4;
+                }
+                break;
 								
-			case 4:	if( buff[2]==0x00 && ll->sequenceNumber==1 ){
-							assert(write(fd, RR, 5) == 5);
-							state=1;
-							}
-						else 
-							state=5;
-						break;
-						
-			case 5:	if(buff[2]==0x40 && ll->sequenceNumber==0){
-							//RR = {0x7E, 0x03, 0x21, , 0x7E};
-							RR[2]=0x21;
-			    			RR[3]=0x03^0x21;
-							assert(write(fd, RR, 5) == 5);
-							state=1;
-							}
-						else 
-							state=6;								
-						break;
-					
-			case 6:	buff_destuff[tam-1] = '\0';  //para strcpy funcionar
-						strcpy(buffer, buff_destuff+4);
-						//RR[0]= enviar rr
-						if( buff[2]==0x00){
-							ll->sequenceNumber=1;
-							assert(write(fd, RR, 5) == 5);
-							state=1;
-							}
-						else if(buff[2]==0x40){
-							ll->sequenceNumber=0;
-							//RR = {0x7E, 0x03, 0x21, 0x03^0x21, 0x7E};
-			    			RR[2]=0x21;
-			    			RR[3]=0x03^0x21;
-							assert(write(fd, RR, 5) == 5);
-							state=1;
-						}							
-						else state=7;
-						break;
-
-			case 7:	printf("Read OK!");
-				
+			case 4: //faz destuffing e verifica BCC2
+                tam = destuffing(buff, buff_destuff); //tam = dados+BCC2
+                if( buff_destuff[tam-1] == xor_result(buff_destuff, tam-1) ) { //dados validos
+                    for( i = 0; i< tam-1; i++){ //preenche buffer de retorno
+                        buffer[i] = buff_destuff[i];
+                    }
+                    if(ll->sequenceNumber  == 0){ //envia RR1
+                        ll->sequenceNumber = 1;
+                        RR[2] = 0x21;
+                        RR[3] = RR[1]^RR[2];
+                        assert(write(fd, RR, 5) == 5);
+                    }
+                    else if(ll->sequenceNumber  == 1){ //envia RR0
+                        ll->sequenceNumber = 0;
+                        RR[2] = 0x01;
+                        RR[3] = RR[1]^RR[2];
+                        assert(write(fd, RR, 5) == 5);
+                    }
+                    printf("*** Received valid frame ***");
+                    state = 5;
+                }
+                else { //dados invalidos, enviar REJ
+                    if(ll->sequenceNumber == 0){
+                        REJ[2] = 0x05;
+                        REJ[3] = REJ[1]^REJ[2];
+                        assert(write(fd, REJ, 5) == 5);
+                    }
+                    else if(ll->sequenceNumber == 1){
+                        REJ[2] = 0x25;
+                        REJ[3] = REJ[1]^REJ[2];
+                        assert(write(fd, REJ, 5) == 5);
+                    }
+                    state = 1;
+                }
+                
+            default:
+                break;
 			}
 		}
-	return strlen(buffer);
+	return tam-1;
 }
 
 int size_stuffing(char *buff, int length){
@@ -342,7 +331,7 @@ int size_stuffing(char *buff, int length){
 	return length + new_size;
 }
 
-int stuffing(char *buff, char *stuffedBuffer, int length){ //funciona
+int stuffing(char *buff, unsigned char BCC2, char *stuffedBuffer, int length){ //falta verificar com BCC2
 	int i = 0, j = 0;
 
 	for(i=0;i<length;i++){ //OK
@@ -361,20 +350,29 @@ int stuffing(char *buff, char *stuffedBuffer, int length){ //funciona
 			j++;
 		}		
 	}
+    if(BCC2 == FLAG_RCV){
+        stuffedBuffer[j] = ESCAPE;
+        stuffedBuffer[j+1]    = ESCAPE1;
+        j = j + 2;
+    }
+    else if(BCC2 == ESCAPE){
+        stuffedBuffer[j] = ESCAPE;
+        stuffedBuffer[j+1]    = ESCAPE2;
+        j = j + 2;
+    }
+    else{
+        stuffedBuffer[j] = BCC2;
+        j++;
+    }
 	return j;	 
 }
 
 int llwrite(int fd,char *buffer , int length){
+    /*
 	int i,res,new_size;
-	//unsigned char RR[255];
 	unsigned char BCC2;
 	char *stuffed_buffer;
 	char *trama;
-
-	// Calc BCC2
-	/*for(i=1;i<length;i++){
-		BCC2 ^= buffer[i];
-	}*/
 
 	BCC2 = xor_result(buffer, length);
 
@@ -397,23 +395,73 @@ int llwrite(int fd,char *buffer , int length){
 		printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
 	}
 
-	/* Envia trama TRAMA I*/							
+	// Envia trama TRAMA I
 	res = write(fd,stuffed_buffer,length + 6);
 	printf("%d bytes sent\n",res);
 
-	/* Free Memmory*/
+	// Free Memmory
 	//free(trama);
 	//free(stuffed_buffer);
 	
-	/* Espera pela resposta RR*/				
+	// Espera pela resposta RR
 	//readpacket(fd,RR,255,TRANSMITTER);
 	
 	// Verificar RR
 
 
 	SNQNUM = (SNQNUM) ? 0 : 1;		
+     */
+    
 
-	return 0;
+    unsigned char BCC2;
+    char trama[MAX_SIZE];
+    int dataAndBCC2Length = 0;
+    int frameSize = 0;
+    int error = 1;
+    int bytesWritten = 0;
+    unsigned char ack[MAX_SIZE];
+    
+    BCC2 = xor_result(buffer, length); //calcula BCC2
+    
+    trama[0] = FLAG_RCV; //preenche trama
+    trama[1] = A;
+    trama[2] = (ll->sequenceNumber) ? C_I_1 : C_I_0;
+    trama[3] = trama[1]^trama[2];
+    
+    dataAndBCC2Length = stuffing(buffer, BCC2, &trama[4], length);
+    
+    trama[4 + dataAndBCC2Length] = FLAG_RCV; //termina de preencher trama
+    
+    frameSize = dataAndBCC2Length + 5;
+    
+    alarmCounter = 1; //começa transmissão da trama_______________________
+    error = 1;
+    while(alarmCounter <= ll->numTransmissions && error){
+        if(alarmFlag){
+            alarm(ll->timeout); //activa alarme de 3s
+            alarmFlag=0;
+        }
+        
+        bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
+        printf("%d bytes sent\n", bytesWritten);
+        
+        readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
+        
+        if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
+            continue;
+        }
+        else{    //ack válido
+            if(ack[2] == 0x21 || ack[2] == 0x01){ //Recebemos RR
+                ll->sequenceNumber = (ll->sequenceNumber)? 0 : 1;
+                error = 0;
+            }
+            else if(ack[2] == 0x05 || ack[2] == 0x25){  //Recebemos REJ
+                alarmCounter = 1; //começamos transmissão de novo?
+            }
+        }
+    }
+    
+	return frameSize;
 }
 int llclose(int fd){
 	return 0;

@@ -37,9 +37,15 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
 //mode = TRANSMITTER ou RECEIVER
 
 
-int llopen(int fd, unsigned char mode);
+int llopen(int fd, unsigned char mode); //OK
+//retorna 1 em caso de sucesso, -1 em caso de erro
+//mode = TRANSMITTER ou RECEIVER
+//se mode == RECEIVER bloqueia até establecer ligação
+//se mode == TRANSMITTER tenta establecer ligação algumas vezes e depois retorna -1 caso não consiga
 
 int llread(int fd, char *buffer);
+//recebe pacote de dados para buffer
+//retorna tamanho de buffer
 
 int destuffing( unsigned char *buff, char *buffDestuff); //OK
 //devolve campo de dados + BCC em buffDestuff
@@ -49,7 +55,7 @@ unsigned char xor_result(char *array, int tam); //OK
 //faz xor normalmente e retorna
 
 int size_stuffing(char *buff, int length);
-int stuffing(char *buff,char *stuffedBuffer, int length); //OK
+int stuffing(char *buff, unsigned char BCC2 , char *stuffedBuffer, int length); //OK (falta verificar com BCC2)
 //faz stuffing do bloco de dados + BCC
 //retorna tamanho de stuffedBuffer
 
