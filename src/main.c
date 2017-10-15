@@ -25,8 +25,8 @@ int main(int argc, char** argv)
     char mode;
 	unsigned char BCC = 0;
 	//char c;
-	char buffStuff[200];
-	char buff[200];
+	char dataToSend[200];
+	unsigned char dataReceived[200];
     //char file_name[] = "ola";
     //char read_str[255];
     //int fd_file;  
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
 	if(mode == TRANSMITTER){
-		/*		
+				
 		dataToSend[0] = 0x7e;
 		dataToSend[1] = 'a';
 		dataToSend[2] = 'b';
@@ -73,19 +73,19 @@ int main(int argc, char** argv)
 
 		assert(write(fd, dataToSend, 10) == 10);	
 
-		*/
+		
 	}
 	else if(mode == RECEIVER){
 		
-		/*readpacket(fd, dataReceived, RECEIVER);
+		readpacket(fd, dataReceived, RECEIVER);
 		
 		for(i = 0; i < 15; i++){
 			printf("dataReceived[%d] = 0x%02x \n", i, dataReceived[i]);
 		}
-		*/
+		
 
 	}
-
+	/*
 	buff[0] = 0x7e;
 	buff[1] = 'a'; //CAGA
 	buff[2] = 'b'; //CAGA
@@ -103,7 +103,7 @@ int main(int argc, char** argv)
 	for(i = 0; i < dataSize; i++){
 		printf("buffStuff[%d] = 0x%02x \n", i, buffStuff[i]);
 	}
-
+	*/
 
 
 
