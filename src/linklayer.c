@@ -419,6 +419,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
             else if(ack[2] == 0x05 || ack[2] == 0x25){  //Recebemos REJ
                 alarmCounter = 1; //começamos transmissão de novo?
             }
+            else{ //ack inválido
+                error = 1;
+            }
         }
     }
     
