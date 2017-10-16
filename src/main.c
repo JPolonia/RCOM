@@ -60,7 +60,10 @@ int main(int argc, char** argv)
 	if(mode == TRANSMITTER){
         
         printf("Insira o caminho para o ficheiro que pretende transferir:\n");
-        assert(scanf("%s", fileName) >= 0);
+        if(scanf("%s", fileName) < 0){
+            printf("Erro em scanf()\n");
+            return -1;
+        }
         
         if(llopen(fd, TRANSMITTER) < 0 ){
             printf("llopen() falhou\n");
@@ -69,6 +72,10 @@ int main(int argc, char** argv)
         }
         
         f = openFileTransmmiter(fileName); //abre ficheiro
+        if (f == NULL) {
+            printf("Erro ao abrir ficheiro\n");
+            return 0;
+        }
         
         fseek(f, 0L, SEEK_END); //obtem tamanho do ficheiro
         fileSize = ftell(f);
@@ -109,10 +116,23 @@ int main(int argc, char** argv)
         }
         
         fileSize = receiveStart(fd, fileName); //espera por START e guarda tamanho e nome
+        if(fileSize < 1){
+            printf("Erro ao receber START packet\n");
+            return 0;
+        }
         
         f = openFileReceiver(fileName); //cria ficheiro
+        if (f == NULL) {
+            printf("Erro ao abrir ficheiro\n");
+            return 0;
+        }
         
         bytesReceived = receiveData(f, fd); //recebe e escreve dados no ficheiro
+        if(bytesReceived < 0){
+            printf("Erro ao receber ficheiro\n");
+            fclose(f);
+            return 0;
+        }
         
         fclose(f);
         

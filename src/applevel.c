@@ -136,21 +136,11 @@ int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *
 
 FILE *openFileTransmmiter(char *pathToFile){ //funciona
     FILE *file = fopen(pathToFile, "rb");
-    if (file == NULL) {
-        printf("Erro ao abrir ficheiro\n");
-        assert(file != NULL);
-        return NULL;
-    }
     return file;
 }
 
 FILE *openFileReceiver(char *pathToFile){ //funciona
     FILE *file = fopen(pathToFile, "wb");
-    if (file == NULL) {
-        printf("Erro ao abrir ficheiro\n");
-        assert(file != NULL);
-        return NULL;
-    }
     return file;
 }
 
@@ -167,7 +157,10 @@ size_t sendData(FILE *file, int fd){ //funciona
     while(bytesRead = fread(buffer, 1, DATA_LEN-1, file), bytesRead != 0){
         
         packetSize = dataPacket(packet, seqNumber, bytesRead, buffer);
-        assert(packetSize == (bytesRead + TRAILER_SIZE) );
+        if(packetSize != (bytesRead + TRAILER_SIZE) ){
+            printf("Erro em dataPacket().\n");
+            return -1;
+        }
         
         
         
@@ -218,15 +211,30 @@ size_t receiveData(FILE *file, int fd){ //funciona
             continue;
         }
         else if(packet[0] == 0x01){ //pacote de dados
-            assert(seqNumber == getSeqNumber(packet)); //verifica que recebemos o pacote de dados certo
+            if(seqNumber != getSeqNumber(packet)){ //verifica que recebemos o pacote de dados certo
+                printf("Foi recebido pacote errado!\n");
+                printf("Queriamos sequence number = %d\n", seqNumber);
+                printf("Recebemos sequence number = %d\n", getSeqNumber(packet));
+                return -1;
+            }
             
             packetSize = getPacketSize(packet);
             
-            assert(packetSize == (packetSizeRead-4)); //verifica que o pacote tem a quantidade de dados que vem descrita no cabeçalho
+            if(packetSize != (packetSizeRead-4)){//verifica que o pacote tem a quantidade de dados que vem descrita no cabeçalho
+                printf("Numero de bytes no pacote não corresponde ao que deveria chegar!\n");
+                printf("Queriamos receber %d bytes.\n", packetSize);
+                printf("Recebemos %d bytes\n", packetSizeRead-4);
+                return -1;
+                
+            }
             
             bytesWritten = fwrite(&packet[4], 1, packetSizeRead-4, file);
-            assert(bytesWritten == (packetSizeRead-4) ); //verifica que escreveu tudo
-            
+            if(bytesWritten != (packetSizeRead-4) ){ //verifica que escreveu tudo
+                printf("Não foi possivel escrever tudo no ficheiro!\n");
+                printf("Queriamos escrever %d bytes.\n", packetSizeRead-4);
+                printf("Escrevemos %zu bytes\n", bytesWritten);
+                return -1;
+            }
             total = total + bytesWritten;
             
             printf("Packet number %d received\n", packetNumber);
@@ -276,7 +284,10 @@ int receiveStart(int fd,char *fileName){
                 
                 //printf("tamanho = %d\n", tamanho);
                 
-                assert(packet[i] == 0x01); //file name
+                if(packet[i] != 0x01){ //não vem file name
+                    printf("Queriamos que o 2º parametro fosse o File Name mas não chegou isso.\n");
+                    return -1;
+                }
                 i++;
                 paramLen = packet[i];
                 i++;

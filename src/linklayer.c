@@ -269,13 +269,17 @@ int llread(int fd,unsigned char *buffer){
                 if( buff[2]==0x00 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
                     RR[2] = 0x21; //queremos seq 1
                     RR[3] = RR[1]^RR[2];
-                    assert(write(fd, RR, 5) == 5);
+                    if(write(fd, RR, 5) != 5){
+                        printf("Falha no envio de RR\n");
+                    }
                     state=1;
                 }
                 else if(buff[2]==0x40 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
                     RR[2] = 0x01; //queremos seq 0
                     RR[3] = RR[1]^RR[2];
-                    assert(write(fd, RR, 5) == 5);
+                    if(write(fd, RR, 5) != 5){
+                        printf("Falha no envio de RR\n");
+                    }
                     state=1;
                 }
                 else{ //recebemos o que queriamos
@@ -296,13 +300,13 @@ int llread(int fd,unsigned char *buffer){
                         ll->sequenceNumber = 1;
                         RR[2] = 0x21;
                         RR[3] = RR[1]^RR[2];
-                        assert(write(fd, RR, 5) == 5);
+                        write(fd, RR, 5);
                     }
                     else if(ll->sequenceNumber  == 1){ //envia RR0
                         ll->sequenceNumber = 0;
                         RR[2] = 0x01;
                         RR[3] = RR[1]^RR[2];
-                        assert(write(fd, RR, 5) == 5);
+                        write(fd, RR, 5);
                     }
                     printf("*** Received valid frame ***\n");
                     state = 5;
@@ -311,12 +315,12 @@ int llread(int fd,unsigned char *buffer){
                     if(ll->sequenceNumber == 0){
                         REJ[2] = 0x05;
                         REJ[3] = REJ[1]^REJ[2];
-                        assert(write(fd, REJ, 5) == 5);
+                        write(fd, REJ, 5);
                     }
                     else if(ll->sequenceNumber == 1){
                         REJ[2] = 0x25;
                         REJ[3] = REJ[1]^REJ[2];
-                        assert(write(fd, REJ, 5) == 5);
+                        write(fd, REJ, 5);
                     }
                     state = 1;
                 }
@@ -382,7 +386,10 @@ int llwrite(int fd, unsigned char *buffer , int length){
     int bytesWritten = 0;
     unsigned char ack[MAX_SIZE];
     
-    assert( ((2*(length+1)) + 5) <=  MAX_SIZE); //verifica que buffer cabe na trama
+    if( ((2*(length+1)) + 5) >  MAX_SIZE){ //verifica que buffer cabe na trama
+        printf("Este pacote não cabe na trama.\n");
+        return -1;
+    }
     
     BCC2 = xor_result(buffer, length); //calcula BCC2
     
