@@ -146,7 +146,7 @@ int llopen(int fd, unsigned char mode){ //funciona
             msg[3] = A^C_SET;
             alarmCounter =    1;
             error = 1;
-            while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+            while(alarmCounter <= ll->numTransmissions && error){
                 
                 alarm(0);
                 alarm(ll->timeout); //activa alarme de 3s
@@ -484,7 +484,7 @@ int llclose(int fd, unsigned char mode){
         case TRANSMITTER:
             alarmCounter = 1;
             error = 1;
-            while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+            while(alarmCounter <= ll->numTransmissions && error){
                 
                 alarm(0);
                 alarm(ll->timeout); //activa alarme de 3s
@@ -519,7 +519,7 @@ int llclose(int fd, unsigned char mode){
                 
                 error = 1;
                 alarmCounter = 1;
-                while(alarmCounter <= ll->numTransmissions && error){ //transmissão de DISC
+                while(alarmCounter <= ll->numTransmissions){ //transmissão de DISC
                     
                     alarm(0);
                     alarm(ll->timeout); //activa alarme de 3s
@@ -532,10 +532,15 @@ int llclose(int fd, unsigned char mode){
                     
                     readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
                     error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
+                    if(error == 0) break;
                 }
                 if(error == 0){
                     printf("Received UA\n");
                     break;
+                }
+                else{
+                    printf("Couldn't receive UA\n");
+                    return -1;
                 }
     
                 
