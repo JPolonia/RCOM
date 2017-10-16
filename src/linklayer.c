@@ -153,10 +153,11 @@ int llopen(int fd, unsigned char mode){ //funciona
             alarmCounter =    1;
             error = 1;
             while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
-                if(alarmFlag){
-                    alarm(ll->timeout); //activa alarme de 3s
-                    alarmFlag=0;
-                }
+                
+                alarm(0);
+                alarm(ll->timeout); //activa alarme de 3s
+                alarmFlag=0;
+                
                 /*Envia trama SET*/
                 res = write(fd,msg,5);
                 printf("%d bytes sent\n",res);
@@ -425,10 +426,11 @@ int llwrite(int fd, unsigned char *buffer , int length){
     alarmCounter = 1; //começa transmissão da trama_______________________
     error = 1;
     while(alarmCounter <= ll->numTransmissions && error){
-        if(alarmFlag){
-            alarm(ll->timeout); //activa alarme de 3s
-            alarmFlag=0;
-        }
+        
+        alarm(0);
+        alarm(ll->timeout); //activa alarme de 3s
+        alarmFlag=0;
+        
         
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
         printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
