@@ -54,12 +54,15 @@ int destuffing( unsigned char *buff, unsigned char *buffDestuff); //OK
 unsigned char xor_result(unsigned char *array, int tam); //OK
 //faz xor normalmente e retorna
 
-int size_stuffing(unsigned char *buff, int length);
 int stuffing(unsigned char *buff, unsigned char BCC2 , unsigned char *stuffedBuffer, int length); //OK (falta verificar com BCC2)
 //faz stuffing do bloco de dados + BCC
 //retorna tamanho de stuffedBuffer
 
 int llwrite(int fd, unsigned char *buffer, int length);
-int llclose(int fd);
+//escreve pacote de dados de buffer, assume que pacote tem lenght carateres
+//retorna tamanho da frame ou -1 em caso de erro
+
+int llclose(int fd, unsigned char mode);
+//mode = TRANSMITTER ou RECEIVER
 
 #endif /* linklayer_H_ */

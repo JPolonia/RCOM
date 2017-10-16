@@ -103,6 +103,12 @@ int main(int argc, char** argv)
         
         fclose(f);
         
+        if(llclose(fd, TRANSMITTER)<0){
+            printf("llclose() falhou\n");
+            sleep(1);
+            return 0;
+        }
+        
         printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
 
 		
@@ -141,6 +147,12 @@ int main(int argc, char** argv)
         }
         
         fclose(f);
+        
+        if(llclose(fd, RECEIVER)<0){
+            printf("llclose() falhou\n");
+            sleep(1);
+            return 0;
+        }
         
         printf("File size = %d\n", fileSize); //para confirmar que chegou tudo
         printf("Received %d bytes\n", bytesReceived);

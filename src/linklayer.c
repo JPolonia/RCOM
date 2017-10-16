@@ -25,6 +25,7 @@ const int C_REJ_0 = 0x05;
 const int C_REJ_1 = 0x25;
 const int C_RR_0 = 0x01;
 const int C_RR_1 = 0x21;
+const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
@@ -343,14 +344,6 @@ int llread(int fd,unsigned char *buffer){
 	return tam-1;
 }
 
-int size_stuffing(unsigned char *buff, int length){
-	int i,new_size=0;
-	for(i=1;i<length-1;i++){
-		new_size += (buff[i] == FLAG_RCV || buff[i] == ESCAPE)  ? 1 : 0;
-	}
-	return length + new_size;
-}
-
 int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
 	int i = 0, j = 0;
 
@@ -478,6 +471,81 @@ int llwrite(int fd, unsigned char *buffer , int length){
     
 	return frameSize;
 }
-int llclose(int fd){
-	return 0;
+
+int llclose(int fd, unsigned char mode){
+    unsigned char DISC[] = {FLAG_RCV, A, C_DISC, A^C_DISC,FLAG_RCV};
+    unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_DISC,FLAG_RCV}; //A = 0x01
+    unsigned char buff[5];
+    int error;
+    int res;
+    
+    printf("*** Trying to close the connection. ***\n");
+    switch(mode){
+        case TRANSMITTER:
+            alarmCounter = 1;
+            error = 1;
+            while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
+                
+                alarm(0);
+                alarm(ll->timeout); //activa alarme de 3s
+                alarmFlag=0;
+                
+                //Envia trama DISC
+                res = write(fd,DISC,5);
+                printf("%d bytes sent\n",res);
+                printf("DISC sent\n");
+                
+                readpacket(fd,buff,TRANSMITTER); //Espera pela resposta DISC
+                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
+            }
+            alarm(0);
+            res = write(fd, UA, 5);
+            printf("%d bytes sent\n",res);
+            printf("UA sent\n");
+            break;
+            
+        case RECEIVER:
+            while(1){ //Espera pela trama DISC
+                DISC[1] = 0x01; //comando enviado pelo recetor
+                DISC[3] = DISC[1]^DISC[2];
+                alarm(0);
+                alarmFlag=0;
+                readpacket(fd,buff,RECEIVER); //esperamos por DISC
+                if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
+                    printf("Received a frame but it isn't DISC, still waiting for DISC\n");
+                    continue;
+                }
+                printf("DISC received\n");
+                
+                error = 1;
+                alarmCounter = 1;
+                while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){ //transmissão de DISC
+                    
+                    alarm(0);
+                    alarm(ll->timeout); //activa alarme de 3s
+                    alarmFlag=0;
+                    
+                    //Envia trama DISC
+                    res = write(fd, DISC, TRANSMITTER);
+                    printf("%d bytes sent\n",res);
+                    printf("DISC sent\n");
+                    
+                    readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
+                    error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
+                }
+                if(error == 0){
+                    printf("Received UA\n");
+                    break;
+                }
+    
+                
+            }
+            break;
+        default:
+            return -1;
+    }
+    closeSerialPort(fd); //fazemos isto aqui?
+    printf("*** Successfully closed the connection. ***\n");
+    alarm(0); //cancela alarme anterior
+    return 1;
 }
