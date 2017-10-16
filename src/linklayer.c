@@ -1,16 +1,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
-
-#include <assert.h>
-
-
 
 #include "linklayer.h"
 #include "alarm.h"
@@ -28,9 +23,8 @@ const int C_I_0 = 0x00;
 const int C_I_1 = 0x40;
 const int C_REJ_0 = 0x05;
 const int C_REJ_1 = 0x25;
-
-volatile int STOP=FALSE;
-volatile int SNQNUM = 0;
+const int C_RR_0 = 0x01;
+const int C_RR_1 = 0x21;
 
 linkLayer* ll;
 
@@ -147,7 +141,6 @@ int llopen(int fd, unsigned char mode){ //funciona
 	printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
 		case TRANSMITTER: //OK
-            //printf("TRANSMISTTER\n");
             msg[2] = C_SET;
             msg[3] = A^C_SET;
             alarmCounter =    1;
@@ -169,7 +162,6 @@ int llopen(int fd, unsigned char mode){ //funciona
             break;
 
 		case RECEIVER: //OK
-            //printf("RECEIVER\n");
             while(1){ //Espera pela trama SET
                 readpacket(fd,buff,RECEIVER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
@@ -177,8 +169,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                     printf("Received an invalid frame\n");
                     continue;
                 }
-                else {
-                    /*Envia resposta UA*/
+                else {//Envia resposta UA
                     msg[2] = C_UA;
                     msg[3] = A^C_UA;
                     res = write(fd,msg,5);
@@ -206,14 +197,14 @@ int llopen(int fd, unsigned char mode){ //funciona
 int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
 	int i=4, j=0;
 
-	while(buff[i]!=0x7e){ //OK
-		if(buff[i]==0x7d && buff[i+1]==0x5e){ //OK
-			buffDestuff[j]=0x7e;
+	while(buff[i]!=FLAG_RCV){ //OK
+		if(buff[i]==ESCAPE && buff[i+1] == ESCAPE1){ //OK
+			buffDestuff[j]=FLAG_RCV;
 			i=i+2;
 			j++;		
 		}
-		else if(buff[i]==0x7d && buff[i+1]==0x5d){ //OK
-			buffDestuff[j]=0x7d;
+		else if(buff[i]==ESCAPE && buff[i+1] == ESCAPE2){ //OK
+			buffDestuff[j]=ESCAPE;
 			i=i+2;
 			j++;		
 		}
@@ -243,8 +234,8 @@ int llread(int fd,unsigned char *buffer){
 
 	unsigned char buff[MAX_SIZE]; //para receber trama inteira
 	unsigned char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
-	unsigned char RR[5] = {0x7e, 0x03, 0x01, 0x03^0x01, 0x7e};
-    unsigned char REJ[5] = {0x7e, 0x03, 0x05, 0x03^0x05, 0x7e};
+	unsigned char RR[5] = {FLAG_RCV, A, C_RR_0, A^C_RR_0, FLAG_RCV};
+    unsigned char REJ[5] = {FLAG_RCV, A, C_REJ_0, A^C_REJ_0, FLAG_RCV};
 	int tam = 1, state=1, i = 0;
 
 	while(state!=5){
@@ -266,8 +257,8 @@ int llread(int fd,unsigned char *buffer){
                 break;
 
 			case 3:  //verifica se trama é repetida
-                if( buff[2]==0x00 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
-                    RR[2] = 0x21; //queremos seq 1
+                if( buff[2]==C_I_0 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
+                    RR[2] = C_RR_1; //queremos seq 1
                     RR[3] = RR[1]^RR[2];
                     if(write(fd, RR, 5) != 5){
                         printf("Falha no envio de RR\n");
@@ -275,8 +266,8 @@ int llread(int fd,unsigned char *buffer){
                     printf("Trama repetida, RR envidado\n");
                     state=1;
                 }
-                else if(buff[2]==0x40 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
-                    RR[2] = 0x01; //queremos seq 0
+                else if(buff[2]==C_I_1 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
+                    RR[2] = C_RR_0; //queremos seq 0
                     RR[3] = RR[1]^RR[2];
                     if(write(fd, RR, 5) != 5){
                         printf("Falha no envio de RR\n");
@@ -300,7 +291,7 @@ int llread(int fd,unsigned char *buffer){
                     }
                     if(ll->sequenceNumber  == 0){ //envia RR1
                         ll->sequenceNumber = 1;
-                        RR[2] = 0x21;
+                        RR[2] = C_RR_1;
                         RR[3] = RR[1]^RR[2];
                         if(write(fd, RR, 5) != 5){
                             printf("Falha ao enviar RR\n");
@@ -309,7 +300,7 @@ int llread(int fd,unsigned char *buffer){
                     }
                     else if(ll->sequenceNumber  == 1){ //envia RR0
                         ll->sequenceNumber = 0;
-                        RR[2] = 0x01;
+                        RR[2] = C_RR_0;
                         RR[3] = RR[1]^RR[2];
                         if(write(fd, RR, 5) != 5){
                             printf("Falha ao enviar RR\n");
@@ -321,7 +312,7 @@ int llread(int fd,unsigned char *buffer){
                 }
                 else { //dados invalidos, enviar REJ
                     if(ll->sequenceNumber == 0){
-                        REJ[2] = C_REJ_0;  //0x05
+                        REJ[2] = C_REJ_0;
                         REJ[3] = (REJ[1]^REJ[2]);
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
@@ -332,7 +323,7 @@ int llread(int fd,unsigned char *buffer){
                         }*/
                     }
                     else if(ll->sequenceNumber == 1){
-                        REJ[2] = C_REJ_1; //0x25
+                        REJ[2] = C_REJ_1;
                         REJ[3] = (REJ[1]^REJ[2]);
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
@@ -452,29 +443,21 @@ int llwrite(int fd, unsigned char *buffer , int length){
             continue;
         }
         else{    //ack válido
-            if((ack[2] == 0x01) && (ll->sequenceNumber == 1)){ //Recebemos RR0
+            if((ack[2] == C_RR_0) && (ll->sequenceNumber == 1)){ //Recebemos RR0
                 printf("RR0 received\n");
                 ll->sequenceNumber = 0;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
-            else if((ack[2] == 0x21) && (ll->sequenceNumber == 0)){ //Recebemos RR1
+            else if((ack[2] == C_RR_1) && (ll->sequenceNumber == 0)){ //Recebemos RR1
                 printf("RR1 received\n");
                 ll->sequenceNumber = 1;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
-            /*
-            if((ack[2] == 0x21) || (ack[2] == 0x01)){ //Recebemos RR
-                printf("RR received\n");
-                //if(ack[2] == 0x01) ll->sequenceNumber = 0;
-                //else if(ack[2] == 0x21) ll->sequenceNumber = 1;
-                ll->sequenceNumber = (ll->sequenceNumber)? 0 : 1;
-                error = 0;
-            }*/
-            else if((ack[2] == 0x05) || (ack[2] == 0x25)){  //Recebemos REJ
+            else if((ack[2] == C_REJ_0) || (ack[2] == C_REJ_1)){  //Recebemos REJ
                 printf("REJ received\n");
                 //alarmCounter = 1; //começamos transmissão de novo?
             }
