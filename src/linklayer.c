@@ -526,7 +526,7 @@ int llclose(int fd, unsigned char mode){
                     alarmFlag=0;
                     
                     //Envia trama DISC
-                    res = write(fd, DISC, TRANSMITTER);
+                    res = write(fd, DISC, 5);
                     printf("%d bytes sent\n",res);
                     printf("DISC sent\n");
                     
