@@ -89,7 +89,10 @@ int sendStartPacket(int fd,int fileSize, char *fileName){ //funciona em principi
     
     int size = controlPacket(buffer, fileSize, fileName, 0x02);
     
-    while(llwrite(fd, buffer, size) < 0 );
+    if(llwrite(fd, buffer, size) < 0 ){
+        printf("llwrite() retornou valor negativo\n");
+        return -1;
+    }
     
     return size;
 }
@@ -100,7 +103,10 @@ int sendEndPacket(int fd, int fileSize,char *fileName){  //funciona em principio
     
     int size = controlPacket(buffer, fileSize, fileName, 0x03);
     
-    while(llwrite(fd, buffer, size) < 0 );
+    if(llwrite(fd, buffer, size) < 0 ){
+        printf("llwrite() retornou valor negativo\n");
+        return -1;
+    }
     
     return controlPacket(buffer, fileSize, fileName, 0x03);
 }

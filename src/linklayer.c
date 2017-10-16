@@ -411,6 +411,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
+            printf("ACK é inválido\n");
             continue;
         }
         else{    //ack válido

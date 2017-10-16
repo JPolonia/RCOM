@@ -74,7 +74,11 @@ int main(int argc, char** argv)
         fileSize = ftell(f);
         rewind(f);
         
-        sendStartPacket(fd, fileSize, fileName);
+        if(sendStartPacket(fd, fileSize, fileName) < 0){
+            fclose(f);
+            printf("Erro ao enviar START packet\n");
+            return 0;
+        }
         
         bytesTransmitted = sendData(f, fd);
         
@@ -84,7 +88,11 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        sendEndPacket(fd, fileSize, fileName);
+        if(sendEndPacket(fd, fileSize, fileName) < 0){
+            fclose(f);
+            printf("Erro ao enviar END packet\n");
+            return 0;
+        }
         
         fclose(f);
         
