@@ -446,9 +446,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
             printf("ACK é inválido\n");
-            for(i = 0;i < 5;i++){
+            /*for(i = 0;i < 5;i++){
                 printf("ACK[%d] = 0x%02x\n", i, ack[i]);
-            }
+            }*/
             continue;
         }
         else{    //ack válido
@@ -480,9 +480,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
             }
             else{ //ack inválido
                 printf("ACK é inválido\n");
-                for(i = 0;i < 5;i++){
+                /*for(i = 0;i < 5;i++){
                     printf("ACK[%d] = 0x%02x\n", i, ack[i]);
-                }
+                }*/
                 error = 1;
             }
         }

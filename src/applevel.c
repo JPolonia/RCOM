@@ -166,6 +166,7 @@ size_t sendData(FILE *file, int fd){ //funciona
         
         if(llwrite(fd, packet, packetSize) < 0 ){
             printf("llwrite() retornou valor negativo\n");
+            printf("Erro ao enviar packet %d\n", packetNumber);
             return -1;
         }
         
