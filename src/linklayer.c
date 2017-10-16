@@ -173,7 +173,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                 readpacket(fd,buff,RECEIVER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
                 if (error) {
-                    printf("Received an invalid frame");
+                    printf("Received an invalid frame\n");
                     continue;
                 }
                 else {
@@ -193,7 +193,9 @@ int llopen(int fd, unsigned char mode){ //funciona
 
 	if(error){
 		printf("*** Error establishing a connection: ***\n");
-		return -1;}		
+		return -1;
+        
+    }
     else{
         printf("*** Successfully established a connection. ***\n");
     }
@@ -420,6 +422,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
                 alarmCounter = 1; //começamos transmissão de novo?
             }
             else{ //ack inválido
+                printf("ACK é inválido\n");
                 error = 1;
             }
         }

@@ -62,7 +62,11 @@ int main(int argc, char** argv)
         printf("Insira o caminho para o ficheiro que pretende transferir:\n");
         assert(scanf("%s", fileName) >= 0);
         
-        llopen(fd, TRANSMITTER);
+        if(llopen(fd, TRANSMITTER) < 0 ){
+            printf("llopen() falhou\n");
+            sleep(1);
+            return 0;
+        }
         
         f = openFileTransmmiter(fileName); //abre ficheiro
         
@@ -84,7 +88,11 @@ int main(int argc, char** argv)
 	}
 	else if(mode == RECEIVER){
 	
-        llopen(fd, RECEIVER);
+        if(llopen(fd, RECEIVER) < 0){
+            printf("llopen() falhou\n");
+            sleep(1);
+            return 0;
+        }
         
         fileSize = receiveStart(fd, fileName); //espera por START e guarda tamanho e nome
         
