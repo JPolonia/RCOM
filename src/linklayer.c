@@ -437,7 +437,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
-            printf("ACK é inválido\n");
+            printf("*** ACK é inválido ***\n");
             /*for(i = 0;i < 5;i++){
                 printf("ACK[%d] = 0x%02x\n", i, ack[i]);
             }*/
@@ -445,25 +445,25 @@ int llwrite(int fd, unsigned char *buffer , int length){
         }
         else{    //ack válido
             if((ack[2] == C_RR_0) && (ll->sequenceNumber == 1)){ //Recebemos RR0
-                printf("RR0 received\n");
+                printf("*** RR0 received ***\n");
                 ll->sequenceNumber = 0;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
             else if((ack[2] == C_RR_1) && (ll->sequenceNumber == 0)){ //Recebemos RR1
-                printf("RR1 received\n");
+                printf("*** RR1 received ***\n");
                 ll->sequenceNumber = 1;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
             else if((ack[2] == C_REJ_0) || (ack[2] == C_REJ_1)){  //Recebemos REJ
-                printf("REJ received\n");
-                //alarmCounter = 1; //começamos transmissão de novo?
+                printf("*** REJ received ***\n");
+                alarmCounter = 1; //começamos transmissão de novo?
             }
             else{ //ack inválido
-                printf("ACK é inválido\n");
+                printf("*** ACK é inválido ***\n");
                 /*for(i = 0;i < 5;i++){
                     printf("ACK[%d] = 0x%02x\n", i, ack[i]);
                 }*/
