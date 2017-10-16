@@ -147,7 +147,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 	printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
 		case TRANSMITTER: //OK
-            printf("TRANSMISTTER\n");
+            //printf("TRANSMISTTER\n");
             msg[2] = C_SET;
             msg[3] = A^C_SET;
             alarmCounter =    1;
@@ -169,7 +169,7 @@ int llopen(int fd, unsigned char mode){ //funciona
             break;
 
 		case RECEIVER: //OK
-            printf("RECEIVER\n");
+            //printf("RECEIVER\n");
             while(1){ //Espera pela trama SET
                 readpacket(fd,buff,RECEIVER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
@@ -305,6 +305,7 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, RR, 5) != 5){
                             printf("Falha ao enviar RR\n");
                         }
+                        printf("RR1 enviado\n");
                     }
                     else if(ll->sequenceNumber  == 1){ //envia RR0
                         ll->sequenceNumber = 0;
@@ -313,6 +314,7 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, RR, 5) != 5){
                             printf("Falha ao enviar RR\n");
                         }
+                        printf("RR0 enviado\n");
                     }
                     printf("*** Received valid frame ***\n");
                     state = 5;
@@ -324,10 +326,10 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
-                        printf("REJ enviado\n");
-                        for(i = 0;i < 5;i++){
+                        printf("REJ0 enviado\n");
+                        /*for(i = 0;i < 5;i++){
                             printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
-                        }
+                        }*/
                     }
                     else if(ll->sequenceNumber == 1){
                         REJ[2] = C_REJ_1; //0x25
@@ -335,10 +337,10 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
-                        printf("REJ enviado\n");
-                        for(i = 0;i < 5;i++){
+                        printf("REJ1 enviado\n");
+                        /*for(i = 0;i < 5;i++){
                             printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
-                        }
+                        }*/
                     }
                     state = 1;
                 }

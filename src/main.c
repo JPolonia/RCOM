@@ -115,7 +115,7 @@ int main(int argc, char** argv)
             return 0;
         }
     
-        printf("llopen() OK\n");
+        //printf("llopen() OK\n");
         
         fileSize = receiveStart(fd, fileName); //espera por START e guarda tamanho e nome
         if(fileSize < 1){
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        printf("receiveStart() OK\n");
+        //printf("receiveStart() OK\n");
         
         f = openFileReceiver(fileName); //cria ficheiro
         if (f == NULL) {
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        printf("openFileReceiver() OK\n");
+        //printf("openFileReceiver() OK\n");
         
         bytesReceived = receiveData(f, fd); //recebe e escreve dados no ficheiro
         if(bytesReceived < 0){
