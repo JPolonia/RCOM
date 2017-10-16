@@ -447,12 +447,18 @@ int llwrite(int fd, unsigned char *buffer , int length){
             continue;
         }
         else{    //ack válido
-            if(ack[2] == 0x21 || ack[2] == 0x01){ //Recebemos RR
+            //if(ack[2] == 0x01 && ll->sequenceNumber == )
+                
+                
+                
+            if((ack[2] == 0x21) || (ack[2] == 0x01)){ //Recebemos RR
                 printf("RR received\n");
+                //if(ack[2] == 0x01) ll->sequenceNumber = 0;
+                //else if(ack[2] == 0x21) ll->sequenceNumber = 1;
                 ll->sequenceNumber = (ll->sequenceNumber)? 0 : 1;
                 error = 0;
             }
-            else if(ack[2] == 0x05 || ack[2] == 0x25){  //Recebemos REJ
+            else if((ack[2] == 0x05) || (ack[2] == 0x25)){  //Recebemos REJ
                 printf("REJ received\n");
                 //alarmCounter = 1; //começamos transmissão de novo?
             }
