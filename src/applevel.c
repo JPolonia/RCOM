@@ -54,14 +54,14 @@ int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned 
     buffer[i] = (char) nOctets; //file size number of bytes
     i++;
     
-    printf("fileSize = %d\n", fileSize);
+    //printf("fileSize = %d\n", fileSize);
     
     
     exp = 8 * nOctets;
     for(j = 0 ; j < nOctets ; j++){ //OK
         buffer[i] = (char)( (fileSize & (int_pow(2, exp)-1)   ) >> (exp-8));// anda de 8 em 8 bits e arrasta para a direita;
         
-        printf("buffer[i] = 0x%02x\n", buffer[i]);
+        //printf("buffer[i] = 0x%02x\n", buffer[i]);
         
         exp = exp - 8;
         i++;
@@ -155,7 +155,7 @@ size_t sendData(FILE *file, int fd){ //funciona
     size_t total = 0;
     
     int packetSize = 0;
-    
+    int packetNumber = 0;
     int seqNumber = 0;
     
     while(bytesRead = fread(buffer, 1, DATA_LEN-1, file), bytesRead != 0){
@@ -169,7 +169,10 @@ size_t sendData(FILE *file, int fd){ //funciona
             printf("Bloqueado porque llwrite retorna < 0...\n");
         }
         
+        printf("Packet number %d sent\n", packetNumber);
+        
         total = total + bytesRead;
+        packetNumber++;
         seqNumber++;
         if(seqNumber == 256) seqNumber = 0;
     }
@@ -197,6 +200,7 @@ size_t receiveData(FILE *file, int fd){ //funciona
     
     int receivedEnd = 0;
     
+    int packetNumber = 0;
     int seqNumber = 0;
     
     while(receivedEnd == 0){
@@ -218,6 +222,8 @@ size_t receiveData(FILE *file, int fd){ //funciona
             
             total = total + bytesWritten;
             
+            printf("Packet number %d received\n", packetNumber);
+            packetNumber++;
             seqNumber++;
             if(seqNumber == 256) seqNumber = 0;
         }
@@ -234,7 +240,7 @@ int getFileSize(unsigned char *buff, int sizeBuff){
     int i;
     for(i = 0; i<sizeBuff ; i++){
         
-        printf("buff[%d] = 0x%02x\n", i, buff[i]);
+        //printf("buff[%d] = 0x%02x\n", i, buff[i]);
         
         fileSize = fileSize + buff[i] * int_pow(256, sizeBuff - 1 - i);
     }
@@ -261,7 +267,7 @@ int receiveStart(int fd,char *fileName){
                 tamanho = getFileSize(&packet[i], paramLen);
                 i = i + paramLen;
                 
-                printf("tamanho = %d\n", tamanho);
+                //printf("tamanho = %d\n", tamanho);
                 
                 assert(packet[i] == 0x01); //file name
                 i++;

@@ -119,7 +119,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 				} else i++;
 				break;
 			case 4: 
-				printf("OK!\n");
+				printf("Frame received!\n");
 				i=0; 			
 				state = 5;
 				break;
@@ -246,7 +246,7 @@ int llread(int fd,unsigned char *buffer){
 	int tam = 1, state=1, i = 0;
 
 	while(state!=5){
-		printf("STATE %d - llread\n",state);
+		//printf("STATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
                 readpacket(fd, buff, RECEIVER);
@@ -284,7 +284,7 @@ int llread(int fd,unsigned char *buffer){
 			case 4: //faz destuffing e verifica BCC2
                 tam = destuffing(buff, buff_destuff); //tam = dados+BCC2
                 
-                printf("buff_destuff[tam-1] = BCC2 = 0x%02x\nxor_result = 0x%02x\n", buff_destuff[tam-1], xor_result(buff_destuff, tam-1));
+                //printf("buff_destuff[tam-1] = BCC2 = 0x%02x\nxor_result = 0x%02x\n", buff_destuff[tam-1], xor_result(buff_destuff, tam-1));
                 
                 if( buff_destuff[tam-1] == xor_result(buff_destuff, tam-1) ) { //dados validos
                     for( i = 0; i< tam-1; i++){ //preenche buffer de retorno

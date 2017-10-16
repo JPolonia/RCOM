@@ -92,14 +92,10 @@ int main(int argc, char** argv)
         
         bytesReceived = receiveData(f, fd); //recebe e escreve dados no ficheiro
         
-        if(bytesReceived == fileSize){
-            printf("OK!!");
-        }
-        else{
-            printf("NOT OK...");
-        }
-        
         fclose(f);
+        
+        printf("File size = %d\n", fileSize); //para confirmar que chegou tudo
+        printf("Received %d bytes\n", bytesReceived);
 
 	}
 
