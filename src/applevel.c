@@ -236,7 +236,7 @@ int getFileSize(unsigned char *buff, int sizeBuff){
         
         printf("buff[%d] = 0x%02x\n", i, buff[i]);
         
-        fileSize = fileSize + buff[i] * int_pow(256,i);
+        fileSize = fileSize + buff[i] * int_pow(256, sizeBuff - 1 - i);
     }
     return fileSize;
 }
