@@ -499,6 +499,7 @@ int llclose(int fd, unsigned char mode){
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
             }
             alarm(0);
+            sleep(1);
             res = write(fd, UA, 5);
             printf("%d bytes sent\n",res);
             printf("UA sent\n");
