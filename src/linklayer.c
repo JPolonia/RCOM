@@ -519,7 +519,7 @@ int llclose(int fd, unsigned char mode){
                 
                 error = 1;
                 alarmCounter = 1;
-                while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){ //transmissão de DISC
+                while(alarmCounter <= ll->numTransmissions && error){ //transmissão de DISC
                     
                     alarm(0);
                     alarm(ll->timeout); //activa alarme de 3s
