@@ -198,9 +198,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 		return -1;
         
     }
-    else{
-        printf("*** Successfully established a connection. ***\n");
-    }
+    printf("*** Successfully established a connection. ***\n");
 	return 1; 
 	
 }
