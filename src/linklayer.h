@@ -5,7 +5,7 @@
 
 #include <termios.h>
 
-#define MAX_SIZE 10000
+#define MAX_SIZE 4096
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
 #define FALSE 0
 #define TRUE 1
