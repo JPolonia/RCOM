@@ -131,8 +131,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 
 
 	}
-
-	//readpacket(fd, buffer, state, mode, x);
+    alarm(0); //cancela alarme anterior
 }
 
 int llopen(int fd, unsigned char mode){ //funciona
