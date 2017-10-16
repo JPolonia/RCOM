@@ -431,11 +431,13 @@ int llwrite(int fd, unsigned char *buffer , int length){
         }
         else{    //ack válido
             if(ack[2] == 0x21 || ack[2] == 0x01){ //Recebemos RR
+                printf("RR received\n");
                 ll->sequenceNumber = (ll->sequenceNumber)? 0 : 1;
                 error = 0;
             }
             else if(ack[2] == 0x05 || ack[2] == 0x25){  //Recebemos REJ
-                alarmCounter = 1; //começamos transmissão de novo?
+                printf("REJ received\n");
+                //alarmCounter = 1; //começamos transmissão de novo?
             }
             else{ //ack inválido
                 printf("ACK é inválido\n");
