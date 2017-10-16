@@ -428,6 +428,10 @@ int llwrite(int fd, unsigned char *buffer , int length){
         }
     }
     
+    if (error == 1){
+        return -1;
+    }
+    
 	return frameSize;
 }
 int llclose(int fd){

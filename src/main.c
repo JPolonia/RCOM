@@ -78,6 +78,12 @@ int main(int argc, char** argv)
         
         bytesTransmitted = sendData(f, fd);
         
+        if(bytesTransmitted < 0){
+            fclose(f);
+            printf("Erro ao enviar ficheiro\n");
+            return 0;
+        }
+        
         sendEndPacket(fd, fileSize, fileName);
         
         fclose(f);

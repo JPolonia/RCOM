@@ -165,8 +165,9 @@ size_t sendData(FILE *file, int fd){ //funciona
         
         
         
-        while(llwrite(fd, packet, packetSize) < 0 ){
-            printf("Bloqueado porque llwrite retorna < 0...\n");
+        if(llwrite(fd, packet, packetSize) < 0 ){
+            printf("llwrite() retornou valor negativo\n");
+            return -1;
         }
         
         printf("Packet number %d sent\n", packetNumber);
