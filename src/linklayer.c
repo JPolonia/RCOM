@@ -420,9 +420,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
     error = 1;
     while(alarmCounter <= ll->numTransmissions && error){
     
-        alarm(0);
-        alarm(ll->timeout); //activa alarme de 3s
-        alarmFlag=0;
+       
         
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
         printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
@@ -430,6 +428,11 @@ int llwrite(int fd, unsigned char *buffer , int length){
         for(i = 0; i < 5; i++){
             ack[i] = 0;
         }
+        
+        
+        alarm(0);
+        alarm(ll->timeout); //activa alarme de 3s
+        alarmFlag=0;
         
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
