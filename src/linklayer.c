@@ -449,13 +449,13 @@ int llwrite(int fd, unsigned char *buffer , int length){
             continue;
         }
         else{    //ack válido
-            if((ack[2] == 0x01) && (ll->sequenceNumber == 0)){ //Recebemos RR0
+            if((ack[2] == 0x01) && (ll->sequenceNumber == 1)){ //Recebemos RR0
                 printf("RR0 received\n");
                 ll->sequenceNumber = 0;
                 error = 0;
                 break;
             }
-            else if((ack[2] == 0x21) && (ll->sequenceNumber == 1)){ //Recebemos RR1
+            else if((ack[2] == 0x21) && (ll->sequenceNumber == 0)){ //Recebemos RR1
                 printf("RR1 received\n");
                 ll->sequenceNumber = 1;
                 error = 0;
