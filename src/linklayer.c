@@ -300,13 +300,17 @@ int llread(int fd,unsigned char *buffer){
                         ll->sequenceNumber = 1;
                         RR[2] = 0x21;
                         RR[3] = RR[1]^RR[2];
-                        write(fd, RR, 5);
+                        if(write(fd, RR, 5) != 5){
+                            printf("Falha ao enviar RR\n");
+                        }
                     }
                     else if(ll->sequenceNumber  == 1){ //envia RR0
                         ll->sequenceNumber = 0;
                         RR[2] = 0x01;
                         RR[3] = RR[1]^RR[2];
-                        write(fd, RR, 5);
+                        if(write(fd, RR, 5) != 5){
+                            printf("Falha ao enviar RR\n");
+                        }
                     }
                     printf("*** Received valid frame ***\n");
                     state = 5;
@@ -315,12 +319,16 @@ int llread(int fd,unsigned char *buffer){
                     if(ll->sequenceNumber == 0){
                         REJ[2] = 0x05;
                         REJ[3] = REJ[1]^REJ[2];
-                        write(fd, REJ, 5);
+                        if(write(fd, REJ, 5) != 5){
+                            printf("Falha ao enviar REJ\n");
+                        }
                     }
                     else if(ll->sequenceNumber == 1){
                         REJ[2] = 0x25;
                         REJ[3] = REJ[1]^REJ[2];
-                        write(fd, REJ, 5);
+                        if(write(fd, REJ, 5) != 5){
+                            printf("Falha ao enviar REJ\n");
+                        }
                     }
                     state = 1;
                 }
