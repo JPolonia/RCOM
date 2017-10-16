@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 	if(mode == TRANSMITTER){
         
         printf("Insira o caminho para o ficheiro que pretende transferir:\n");
-        scanf("%s", fileName);
+        assert(scanf("%s", fileName) >= 0);
         
         llopen(fd, TRANSMITTER);
         

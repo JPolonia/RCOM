@@ -54,10 +54,14 @@ int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned 
     buffer[i] = (char) nOctets; //file size number of bytes
     i++;
     
+    printf("fileSize = %d\n", fileSize);
+    
+    
     exp = 8 * nOctets;
     for(j = 0 ; j < nOctets ; j++){ //OK
         buffer[i] = (char)( (fileSize & (int_pow(2, exp)-1)   ) >> (exp-8));// anda de 8 em 8 bits e arrasta para a direita;
-        //printf("\n%d\n", buffer[i]);
+        
+        printf("buffer[i] = 0x%02x\n", buffer[i]);
         
         exp = exp - 8;
         i++;
@@ -229,6 +233,9 @@ int getFileSize(unsigned char *buff, int sizeBuff){
     int fileSize = 0;
     int i;
     for(i = 0; i<sizeBuff ; i++){
+        
+        printf("buff[%d] = 0x%02x\n", i, buff[i]);
+        
         fileSize = fileSize + buff[i] * int_pow(256,i);
     }
     return fileSize;
@@ -253,6 +260,8 @@ int receiveStart(int fd,char *fileName){
                 i++;
                 tamanho = getFileSize(&packet[i], paramLen);
                 i = i + paramLen;
+                
+                printf("tamanho = %d\n", tamanho);
                 
                 assert(packet[i] == 0x01); //file name
                 i++;
