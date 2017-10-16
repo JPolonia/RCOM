@@ -26,6 +26,8 @@ const int C_SET = 0x03;
 const int C_UA = 0x07;
 const int C_I_0 = 0x00;
 const int C_I_1 = 0x40;
+const int C_REJ_0 = 0x05;
+const int C_REJ_1 = 0x25;
 
 volatile int STOP=FALSE;
 volatile int SNQNUM = 0;
@@ -319,20 +321,26 @@ int llread(int fd,unsigned char *buffer){
                 }
                 else { //dados invalidos, enviar REJ
                     if(ll->sequenceNumber == 0){
-                        REJ[2] = 0x05;
-                        REJ[3] = REJ[1]^REJ[2];
+                        REJ[2] = C_REJ_0;  //0x05
+                        REJ[3] = (REJ[1]^REJ[2]);
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
                         printf("REJ enviado\n");
+                        for(i = 0;i < 5;i++){
+                            printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
+                        }
                     }
                     else if(ll->sequenceNumber == 1){
-                        REJ[2] = 0x25;
-                        REJ[3] = REJ[1]^REJ[2];
+                        REJ[2] = C_REJ_1; //0x25
+                        REJ[3] = (REJ[1]^REJ[2]);
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
                         printf("REJ enviado\n");
+                        for(i = 0;i < 5;i++){
+                            printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
+                        }
                     }
                     state = 1;
                 }
@@ -435,6 +443,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
             printf("ACK é inválido\n");
+            for(i = 0;i < 5;i++){
+                printf("ACK[%d] = 0x%02x\n", i, ack[i]);
+            }
             continue;
         }
         else{    //ack válido
@@ -449,6 +460,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
             }
             else{ //ack inválido
                 printf("ACK é inválido\n");
+                for(i = 0;i < 5;i++){
+                    printf("ACK[%d] = 0x%02x\n", i, ack[i]);
+                }
                 error = 1;
             }
         }
