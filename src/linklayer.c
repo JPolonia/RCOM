@@ -146,15 +146,16 @@ int llopen(int fd, unsigned char mode){ //funciona
             alarmCounter =    1;
             error = 1;
             while(alarmCounter <= ll->numTransmissions && buff[4] != FLAG_RCV && error){
-                
-                alarm(0);
-                alarm(ll->timeout); //activa alarme de 3s
-                alarmFlag=0;
-                
+
                 /*Envia trama SET*/
                 res = write(fd,msg,5);
                 printf("%d bytes sent\n",res);
-                /*Espera pela resposta UA*/
+                
+                
+                alarm(0); //Espera pela resposta UA
+                alarm(ll->timeout); //activa alarme de 3s
+                alarmFlag=0;
+                
                 readpacket(fd,buff,TRANSMITTER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
                 
@@ -420,11 +421,6 @@ int llwrite(int fd, unsigned char *buffer , int length){
     error = 1;
     while(alarmCounter <= ll->numTransmissions && error){
         
-        alarm(0);
-        alarm(ll->timeout); //activa alarme de 3s
-        alarmFlag=0;
-        
-        
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
         printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
         
@@ -432,6 +428,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
             ack[i] = 0;
         }
         
+        alarm(0);
+        alarm(ll->timeout); //activa alarme de 3s
+        alarmFlag=0;
         
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
