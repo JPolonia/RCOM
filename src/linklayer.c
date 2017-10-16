@@ -426,16 +426,18 @@ int llwrite(int fd, unsigned char *buffer , int length){
     alarmCounter = 1; //começa transmissão da trama_______________________
     error = 1;
     while(alarmCounter <= ll->numTransmissions && error){
-        if(alarmFlag){
-            alarm(ll->timeout); //activa alarme de 3s
-            alarmFlag=0;
-        }
+        
         
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
         printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
         
         for(i = 0; i < 5; i++){
             ack[i] = 0;
+        }
+        
+        if(alarmFlag){
+            alarm(ll->timeout); //activa alarme de 3s
+            alarmFlag=0;
         }
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
@@ -447,17 +449,26 @@ int llwrite(int fd, unsigned char *buffer , int length){
             continue;
         }
         else{    //ack válido
-            //if(ack[2] == 0x01 && ll->sequenceNumber == )
-                
-                
-                
+            if((ack[2] == 0x01) && (ll->sequenceNumber == 0)){ //Recebemos RR0
+                printf("RR0 received\n");
+                ll->sequenceNumber = 0;
+                error = 0;
+                break;
+            }
+            else if((ack[2] == 0x21) && (ll->sequenceNumber == 1)){ //Recebemos RR1
+                printf("RR1 received\n");
+                ll->sequenceNumber = 1;
+                error = 0;
+                break;
+            }
+            /*
             if((ack[2] == 0x21) || (ack[2] == 0x01)){ //Recebemos RR
                 printf("RR received\n");
                 //if(ack[2] == 0x01) ll->sequenceNumber = 0;
                 //else if(ack[2] == 0x21) ll->sequenceNumber = 1;
                 ll->sequenceNumber = (ll->sequenceNumber)? 0 : 1;
                 error = 0;
-            }
+            }*/
             else if((ack[2] == 0x05) || (ack[2] == 0x25)){  //Recebemos REJ
                 printf("REJ received\n");
                 //alarmCounter = 1; //começamos transmissão de novo?
