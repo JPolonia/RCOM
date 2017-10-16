@@ -272,6 +272,7 @@ int llread(int fd,unsigned char *buffer){
                     if(write(fd, RR, 5) != 5){
                         printf("Falha no envio de RR\n");
                     }
+                    printf("Trama repetida, RR envidado\n");
                     state=1;
                 }
                 else if(buff[2]==0x40 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
@@ -280,6 +281,7 @@ int llread(int fd,unsigned char *buffer){
                     if(write(fd, RR, 5) != 5){
                         printf("Falha no envio de RR\n");
                     }
+                    printf("Trama repetida, RR envidado\n");
                     state=1;
                 }
                 else{ //recebemos o que queriamos
@@ -322,6 +324,7 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
+                        printf("REJ enviado\n");
                     }
                     else if(ll->sequenceNumber == 1){
                         REJ[2] = 0x25;
@@ -329,6 +332,7 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
+                        printf("REJ enviado\n");
                     }
                     state = 1;
                 }
@@ -392,6 +396,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
     int frameSize = 0;
     int error = 1;
     int bytesWritten = 0;
+    int i = 0;
     unsigned char ack[MAX_SIZE];
     
     if( ((2*(length+1)) + 5) >  MAX_SIZE){ //verifica que buffer cabe na trama
@@ -423,6 +428,9 @@ int llwrite(int fd, unsigned char *buffer , int length){
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
         printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
         
+        for(i = 0; i < 5; i++){
+            ack[i] = 0;
+        }
         readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
