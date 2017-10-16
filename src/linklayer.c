@@ -131,7 +131,6 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 
 
 	}
-    alarm(0); //cancela alarme anterior
 }
 
 int llopen(int fd, unsigned char mode){ //funciona
@@ -198,6 +197,7 @@ int llopen(int fd, unsigned char mode){ //funciona
         
     }
     printf("*** Successfully established a connection. ***\n");
+    alarm(0); //cancela alarme anterior
 	return 1; 
 	
 }
@@ -452,12 +452,14 @@ int llwrite(int fd, unsigned char *buffer , int length){
                 printf("RR0 received\n");
                 ll->sequenceNumber = 0;
                 error = 0;
+                alarm(0); //cancela alarme anterior
                 break;
             }
             else if((ack[2] == 0x21) && (ll->sequenceNumber == 0)){ //Recebemos RR1
                 printf("RR1 received\n");
                 ll->sequenceNumber = 1;
                 error = 0;
+                alarm(0); //cancela alarme anterior
                 break;
             }
             /*
