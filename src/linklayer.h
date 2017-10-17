@@ -32,11 +32,11 @@ int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);
 
-int readpacket(int fd,unsigned char *buffer,int state, char mode,int index);
+int readpacket(int fd,unsigned char *buffer,int state, char mode,int index,int maxsize);
 int llopen(int fd, char flag);
 int llread(int fd, char *buffer);
 int destuffing(char *buff, char *buff_destuff);
-char xor_result(char *array, int tam);
+char xor_result(char *array, int length);
 int size_stuffing(char *buff, int length);
 void stuffing(char *buff,char *stuffed_buffer, int length);
 int llwrite(int fd, char *buffer, int length);

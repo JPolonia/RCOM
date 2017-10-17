@@ -23,6 +23,9 @@ const int C_UA = 0x07;
 const int C_I_0 = 0x00;
 const int C_I_1 = 0x40;
 
+const int C_REJ_0 = 0x05;
+const int C_REJ_1 = 0x25;
+
 volatile int STOP=FALSE;
 volatile int SNQNUM = 0;
 
@@ -82,10 +85,14 @@ int initTermios(int fd){
 	return 1;
 }
 
-int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
+int readpacket(int fd,unsigned char *buffer,int state, char mode, int index, int maxsize){
 	//int c=100;
 	int bytesRead;
 	if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+
+	if(alarmFlag && (mode==TRANSMITTER) ){ 		
+		return -1;
+	}
 	//while(state!=4){
 		switch(state){
 			/*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
@@ -122,9 +129,7 @@ int readpacket(int fd,unsigned char *buffer,int state, char mode, int index){
 		
 		
 		
-	if(alarmFlag && (mode==TRANSMITTER) ){ 		
-		return -1;
-	}
+	
 	//}
 	return readpacket(fd, buffer, state, mode, index);
 }
@@ -193,6 +198,7 @@ int llopen(int fd, char flag){
 }
 
 int destuffing(char *buff, char *buff_destuff){
+	//i- index for buff, j - index for buff_destuff
 	int i=1, j=0;
 
 	buff_destuff[j]=FLAG_RCV; 
@@ -203,13 +209,11 @@ int destuffing(char *buff, char *buff_destuff){
 			buff_destuff[j]=FLAG_RCV;
 			i=i+2;
 			j++;		
-		}
-		else if(buff[i]==ESCAPE && buff[i+1]==ESCAPE2){
+		}else if(buff[i]==ESCAPE && buff[i+1]==ESCAPE2){
 			buff_destuff[j]=ESCAPE;
 			i=i+2;
 			j++;		
-		}
-		else{
+		}else{
 			buff_destuff[j]=buff[i];
 			i++;
 			j++;
@@ -221,31 +225,51 @@ int destuffing(char *buff, char *buff_destuff){
 	return j; 
 }
 
-char xor_result(char *array, int tam){
-	char xor;
-	int i=2;
+void stuffing(char *buff,char *stuffed_buffer, int length){
+	//i- index for buff, j - index for stuffed_buffer
+	int i,j;
 
-	xor = array[0] ^ array[1];
+	j = 0;
+	stuffed_buffer[j++] = FLAG_RCV;
 
-	for(i=2; i<tam-1; i++){
-		xor = xor ^ array[i];
+	for(i=1;i<length-1;i++){
+		
+		if(buff[i] == FLAG_RCV){
+			stuffed_buffer[j++] = ESCAPE;
+			stuffed_buffer[j++]	= ESCAPE1;
+		}else if(buff[i] == ESCAPE){
+			stuffed_buffer[j++] = ESCAPE;
+			stuffed_buffer[j++]	= ESCAPE2;
+		}else 
+			stuffed_buffer[j++] = buff[i];
 	}
-	return xor;
+	
+	stuffed_buffer[j] = FLAG_RCV;
 }
 
+char xor_result(char *array, int length){
+	char BCC2;
+	int i;
+
+	for(i=1;i<length;i++)
+		BCC2 ^= buffer[i];
+
+	return BCC2;
+}
 
 int llread(int fd, char *buffer){
 
 	unsigned char stuffed_buffer[MAX_SIZE];
 	char buff_destuff[MAX_SIZE];
-	unsigned char RR[5] = {FLAG_RCV, 0x03, 0x01, 0x03^0x01, FLAG_RCV};
+	unsigned char RR[5] = {FLAG_RCV, A, 0x01, A^0x01, FLAG_RCV};
+	unsigned char REJ[5] = {FLAG_RCV, A, C_REJ_0, A^C_REJ_0,FLAG_RCV};
 	int sizeDestuffed=0, state=1, i, x=0,bytesRead=0;
 
 	while(state!=7){
 		printf("STATE-LLREAD %d \n",state);
 		switch(state){
 			/*STATE-LLREAD 1 - READ STUFFED_BUFFER FROM BUFFER*/
-			case 1:	bytesRead = readpacket(fd, stuffed_buffer, 1, RECEIVER, x);
+			case 1:	bytesRead = readpacket(fd, stuffed_buffer, 1, RECEIVER, 0);
 					for(i=0;i<bytesRead;i++)
 						printf("stuffed_buffer[%d] = 0x%02x %c \n",i,stuffed_buffer[i],stuffed_buffer[i]);
 					state=2;				
@@ -323,39 +347,26 @@ int size_stuffing(char *buff, int length){
 	return length + new_size;
 }
 
-void stuffing(char *buff,char *stuffed_buffer, int length){
-	int i,index;
 
-	index = 0;
-	stuffed_buffer[index++] = FLAG_RCV;
-
-	for(i=1;i<length-1;i++){
-		
-		if(buff[i] == FLAG_RCV){
-			stuffed_buffer[index++] = ESCAPE;
-			stuffed_buffer[index++]	= ESCAPE1;
-		}else if(buff[i] == ESCAPE){
-			stuffed_buffer[index++] = ESCAPE;
-			stuffed_buffer[index++]	= ESCAPE2;
-		}else 
-			stuffed_buffer[index++] = buff[i];
-	}
-	
-	stuffed_buffer[index] = FLAG_RCV;
-}
 
 int llwrite(int fd, char *buffer, int length){
-	int i,bytesWritten,new_size,sizeTrama=0;
-	char RR[255];
+	int i,bytesWritten,bytesRead,new_size,sizeTrama=0,state=0;
+	char ACK[255];
 	char BCC2;
 	char *stuffed_buffer;
 	char *trama;
 
-	// Calc BCC2
-	/*for(i=1;i<length;i++){
-		BCC2 ^= buffer[i];
-	}*/
+	switch (state){
+		/*STATE LLWRITE 0 - ENCAPSULAMENTO DO BUFFER*/
+		case 0: 
+				break;
+		case 1: break;
+		case 2: break;
+		default: break;
 
+	}
+
+	// Calc BCC2
 	BCC2 = xor_result(buffer, length);
 
 	// Encapsulamento da trama: F + A + C + BCC + buffer + BCC2 + F
@@ -384,21 +395,22 @@ int llwrite(int fd, char *buffer, int length){
 
 	/* Envia trama TRAMA I*/							
 	bytesWritten = write(fd,stuffed_buffer,new_size);
-	printf("%d bytes sent\n",bytesWritten);
+	printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
 
 	/* Free Memmory*/
 	//free(trama);
 	//free(stuffed_buffer);
 	
-	/* Espera pela resposta RR*/				
-	// readpacket(fd,RR,255,TRANSMITTER);
+	/* Espera pela resposta RR*/	
+	bytesRead = readpacket(fd,ACK,1,TRANSMITTER, 0);			
+	error = ((ACK[3]!=(ACK[1]^ACK[2]))|| buff[2]!=C_SET) ? 1 : 0;
 	
 	// Verificar RR
 
 
 	SNQNUM = (SNQNUM) ? 0 : 1;		
 
-	return 0;
+	return bytesWritten;
 }
 int llclose(int fd){
 	return 0;
