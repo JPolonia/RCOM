@@ -474,7 +474,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
 
 int llclose(int fd, unsigned char mode){
     unsigned char DISC[] = {FLAG_RCV, A, C_DISC, A^C_DISC,FLAG_RCV};
-    unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_DISC,FLAG_RCV}; //A = 0x01
+    unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_UA,FLAG_RCV}; //A = 0x01
     unsigned char buff[5];
     int error,i;
     int res;
@@ -536,7 +536,7 @@ int llclose(int fd, unsigned char mode){
                     
                     readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
 					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-					if(error)printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+					if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
                     if(!error) break;
                 }
                 if(!error){
