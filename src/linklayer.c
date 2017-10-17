@@ -476,7 +476,7 @@ int llclose(int fd, unsigned char mode){
     unsigned char DISC[] = {FLAG_RCV, A, C_DISC, A^C_DISC,FLAG_RCV};
     unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_DISC,FLAG_RCV}; //A = 0x01
     unsigned char buff[5];
-    int error;
+    int error,i;
     int res;
     
     printf("*** Trying to close the connection. ***\n");
@@ -499,7 +499,6 @@ int llclose(int fd, unsigned char mode){
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
             }
             alarm(0);
-            sleep(1);
             res = write(fd, UA, 5);
             printf("%d bytes sent\n",res);
             printf("UA sent\n");
@@ -529,18 +528,24 @@ int llclose(int fd, unsigned char mode){
                     //Envia trama DISC
                     res = write(fd, DISC, 5);
                     printf("%d bytes sent\n",res);
-                    printf("DISC sent\n");
+					printf("DISC sent\n");
+					
+					for(i=0;i<5;i++){
+						buff[i] = NULL;
+					}
                     
                     readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
-                    error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-                    if(error == 0) break;
+					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
+					if(erro)printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                    if(!erro) break;
                 }
-                if(error == 0){
+                if(!error){
                     printf("Received UA\n");
                     break;
                 }
                 else{
-                    printf("Couldn't receive UA\n");
+					printf("Couldn't receive UA\n");
+					
                     return -1;
                 }
     
