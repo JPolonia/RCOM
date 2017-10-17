@@ -552,6 +552,7 @@ int llclose(int fd, unsigned char mode){
     }
 	sleep(1);
     closeSerialPort(fd); //fazemos isto aqui?
+	sleep(1);
     printf("*** Successfully closed the connection. ***\n");
     alarm(0); //cancela alarme anterior
     return 1;
