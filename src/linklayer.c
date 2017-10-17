@@ -531,13 +531,13 @@ int llclose(int fd, unsigned char mode){
 					printf("DISC sent\n");
 					
 					for(i=0;i<5;i++){
-						buff[i] = NULL;
+						buff[i] = 0;
 					}
                     
                     readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
 					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-					if(erro)printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
-                    if(!erro) break;
+					if(error)printf("PAROU!! buff[0]=%d  buff[1]=%d  buff[2]=%d  buff[3]=%d  buff[4]=%d\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                    if(!error) break;
                 }
                 if(!error){
                     printf("Received UA\n");
