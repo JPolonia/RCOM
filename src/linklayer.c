@@ -9,6 +9,7 @@
 
 #include "linklayer.h"
 #include "alarm.h"
+#include "testes.h"
 
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
@@ -245,6 +246,18 @@ int llread(int fd,unsigned char *buffer){
 			case 1:  //recebe trama
                 readpacket(fd, buff, RECEIVER);
                 state=2;
+
+				//Geração de erros
+				if(ERROR_ACTIVE){
+					insertErrors(buff, length, 0.25, HEADER_ERROR);
+					insertErrors(buff, length, 0.25, DATA_ERROR)
+				}
+
+
+
+
+
+
                 /*for(i=0;i< + 6;i++){
                     printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
                 }*/
