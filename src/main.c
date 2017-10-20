@@ -219,7 +219,7 @@ void teste_cli(char** argv){
 
 	printf("Qual o tempo de timeout? (secs)\n");
 	scanf("%d", &time_out);
-	assert(max_tries >= 0);
+	assert(time_out >= 0);
 
 	printf("Qual o número máximo de tentativas após timeout?\n");
 	scanf("%d", &max_tries);
