@@ -12,11 +12,11 @@
 #include "testes.h"
 
 
-#define ERROR_ACTIVE 1
+#define ERROR_ACTIVE 0
 #define HEADER_ERROR_RATE 0.1
 #define PACKET_ERROR_RATE 0.3
 
-const int T_PROP = 1;
+const int T_PROP = 500; //em ms
 
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
@@ -262,15 +262,7 @@ int llread(int fd,unsigned char *buffer){
 					insertHeaderError(buff, length, HEADER_ERROR_RATE);
 					insertPacketError(buff, length, PACKET_ERROR_RATE);
 
-					
-					alarm(0);
-					alarm(T_PROP);
-					alarmFlag = 0;
-					alarmCounter = 1;
-					while(alarmCounter <= 1){
-						//printf(".");
-						//printf("alarmFlag = %d alarmCounter = %d \n",alarmFlag,alarmCounter);
-					}
+					usleep(T_PROP * 1000);
 				}
 				//_____________________________________________________________
 
