@@ -10,13 +10,11 @@
 #define TRUE 1
 
 #define PACKET_LEN  (((ll->max_size - 5) / 2) - 1)
-
 #define TRAILER_SIZE 4
-
 #define DATA_LEN  (PACKET_LEN - TRAILER_SIZE)
 
 
-int int_pow(int base, int exp){ // funciona
+int int_pow(int base, int exp){ //semelhante a pow() mas com int's
     int result = 1;
     while (exp)
     {
@@ -28,7 +26,7 @@ int int_pow(int base, int exp){ // funciona
     return result;
 }
 
-int numberOfOctets(int number){  //funciona
+int numberOfOctets(int number){  //determina a quantidade de octetos necessários para guardar number
     int n = 0;
     while (number != 0) {
         number >>= 8;
@@ -37,12 +35,11 @@ int numberOfOctets(int number){  //funciona
     return n;
 }
 
-int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned char C){  //funciona acho :P
+int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned char C){  //constroi pacote de controlo em buffer a partir de fileSize, fileName C
     int i = 0;
     int j = 0;
     int exp = 0;
     int nOctets = 0;
-    
     
     buffer[i] = C; //start/end control flag
     i++;
@@ -54,15 +51,9 @@ int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned 
     buffer[i] = (char) nOctets; //file size number of bytes
     i++;
     
-    //printf("fileSize = %d\n", fileSize);
-    
-    
     exp = 8 * nOctets;
-    for(j = 0 ; j < nOctets ; j++){ //OK
+    for(j = 0 ; j < nOctets ; j++){
         buffer[i] = (char)( (fileSize & (int_pow(2, exp)-1)   ) >> (exp-8));// anda de 8 em 8 bits e arrasta para a direita;
-        
-        //printf("buffer[i] = 0x%02x\n", buffer[i]);
-        
         exp = exp - 8;
         i++;
     }
@@ -70,45 +61,45 @@ int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned 
     buffer[i] = 0x01; //file name flag
     i++;
     
-    buffer[i] = (char) strlen(fileName);
+    buffer[i] = (char) strlen(fileName); //file name lenght
     i++;
     
-    for(j = 0; j < strlen(fileName); j++){
+    for(j = 0; j < strlen(fileName); j++){ //copia file name
         buffer[i] = fileName[j];
         i++;
     }
     
-    return i;
+    return i; //retorna tamanho do pacote
   
     
 }
 
-int sendStartPacket(int fd,int fileSize, char *fileName){ //funciona em principio
+int sendStartPacket(int fd,int fileSize, char *fileName){ //envia START packet
     
-    unsigned char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    unsigned char buffer[DATA_LEN]; //limite de octetos no buffer é igual ao máximo de dados que podem ser enviados
     
-    int size = controlPacket(buffer, fileSize, fileName, 0x02);
+    int size = controlPacket(buffer, fileSize, fileName, 0x02); //C = 0x02 -> START
     
-    if(llwrite(fd, buffer, size) < 0 ){
+    if(llwrite(fd, buffer, size) < 0 ){ //envia
         printf("llwrite() retornou valor negativo\n");
         return -1;
     }
     
-    return size;
+    return size; //retorna tamanho do pacote
 }
 
-int sendEndPacket(int fd, int fileSize,char *fileName){  //funciona em principio
+int sendEndPacket(int fd, int fileSize,char *fileName){  //envia END packet
     
-    unsigned char buffer[DATA_LEN]; //nome da constante pode mudar porque não faz sentido
+    unsigned char buffer[DATA_LEN]; //limite de octetos no buffer é igual ao máximo de dados que podem ser enviados
     
-    int size = controlPacket(buffer, fileSize, fileName, 0x03);
+    int size = controlPacket(buffer, fileSize, fileName, 0x03); //C= = 0x03 -> END
     
-    if(llwrite(fd, buffer, size) < 0 ){
+    if(llwrite(fd, buffer, size) < 0 ){ //envia
         printf("llwrite() retornou valor negativo\n");
         return -1;
     }
     
-    return controlPacket(buffer, fileSize, fileName, 0x03);
+    return size; //retorna tamanho do pacote
 }
 
 int dataPacket(unsigned char *buffer, int seqNumber, int tamanho,unsigned char *data ){ //falta verificar
