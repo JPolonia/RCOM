@@ -13,7 +13,8 @@ testes *tt;
 int initTestes(	int active,
 				double headerErrorRate,
 				double packetErrorRate,
-				int addedDelay){
+				int addedDelay,
+                int debug){
 
 
 	srand( time(NULL) );
@@ -23,6 +24,7 @@ int initTestes(	int active,
 	tt->headerErrorRate = headerErrorRate;
 	tt->packetErrorRate = packetErrorRate;
 	tt->addedDelay = addedDelay;
+    tt->debug = debug;
 
 	return 1;
 }
@@ -50,6 +52,9 @@ void teste_cli(char** argv){
 
 	int command;
 	int mode = 0; //=1 -> testes ativados
+    
+    //Debug mode
+    int debug = 0; //=1 -> debug mode ativado
 
 	//FER
 	double headerErrorRate;
@@ -69,7 +74,15 @@ void teste_cli(char** argv){
 	int max_tries;//OK
 	int time_out;//OK
 
-	printf("Pretende entrar em modo de teste? ( s-1 / n-0 )\n");
+    
+    //Obter paramentros__________________________________________________
+    
+    printf("Pretende entrar em modo de debug? ( 1-sim / 0-não )\n");
+    assert(scanf("%d", &debug)>0);
+    assert(debug == 1 || debug == 0);
+    
+    
+	printf("Pretende entrar em modo de teste? ( 1-sim / 0-não )\n");
 	assert(scanf("%d", &command)>0);
     assert(command == 1 || command == 0);
 
@@ -150,14 +163,14 @@ void teste_cli(char** argv){
 		if (e <0) { printf("Couldnt initialize linklayer\n"); exit(-1); }
 
 
-		e = initTestes(mode, headerErrorRate, packetErrorRate, t_prop);
+		e = initTestes(mode, headerErrorRate, packetErrorRate, t_prop, debug);
 		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
 
 
 	}
 	else{ //MODO NORMAL
 
-		e = initTestes(mode, 0, 0, 0);
+		e = initTestes(mode, 0, 0, 0, debug);
 		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
 
 	}

@@ -10,12 +10,10 @@ typedef struct testes {
 	double headerErrorRate;
 	double packetErrorRate;
 	int addedDelay;
+    int debug;
 } testes;
 
 extern testes *tt;
-
-
-void initStat();
 
 int insertHeaderError(unsigned char *buff, int length, double errorRate);
 
