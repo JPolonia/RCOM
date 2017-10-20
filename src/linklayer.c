@@ -16,6 +16,8 @@
 #define HEADER_ERROR_RATE 0.1
 #define PACKET_ERROR_RATE 0.3
 
+const int T_PROP = 1;
+
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
 const int ESCAPE1 = 0x5E;
@@ -131,10 +133,10 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 		}
 		
 		//printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
-
-
 	}
 	return length;
+	
+	
 }
 
 int llopen(int fd, unsigned char mode){ //funciona
@@ -259,6 +261,11 @@ int llread(int fd,unsigned char *buffer){
 				if(ERROR_ACTIVE){
 					insertHeaderError(buff, length, HEADER_ERROR_RATE);
 					insertPacketError(buff, length, PACKET_ERROR_RATE);
+
+					alarmFlag = 0;
+					alarm(0);
+					alarm(T_PROP);
+					while(!alarmFlag);
 				}
 				//_____________________________________________________________
 

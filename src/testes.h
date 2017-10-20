@@ -3,6 +3,18 @@
 
 #pragma once
 
+typedef struct testes {
+	int ferTestActive;
+	double headerErrorRate;
+	double packetErrorRate;
+
+	int TpropTestActive;
+	int addedDelay;
+
+	int capacityTestActive;
+} testes;
+
+
 void initStat();
 
 int insertHeaderError(unsigned char *buff, int length, double errorRate);

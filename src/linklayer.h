@@ -24,11 +24,6 @@ typedef struct linkLayer {
 	struct termios oldtio,newtio; //Struct to save old and new termios
 } linkLayer;
 
-typedef struct testes {
-	int ferActive;
-	int TpropActive;
-} testes;
-
 extern linkLayer* ll;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
