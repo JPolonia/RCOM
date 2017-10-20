@@ -162,7 +162,7 @@ size_t sendData(FILE *file, int fd,int fileSize){ //lê blocos do ficheiro, e en
         }
         
         
-        if(tt->debug) printf("Packet number %d sent\n", packetNumber); //só imprime em modo debug
+        if(tt->debug) printf("\nPacket number %d sent\n", packetNumber); //só imprime em modo debug
         
         
         total = total + bytesRead; //total guarda numero total de bytes enviados
@@ -243,7 +243,7 @@ size_t receiveData(FILE *file, int fd, int fileSize){ //recebe pacotes de dados 
             //atualizar progress bar
             printProgress( (double)total/(double)fileSize );
             
-            if(tt->debug) printf("Packet number %d received\n", packetNumber); //só imprime em modo debug
+            if(tt->debug) printf("\nPacket number %d received\n", packetNumber); //só imprime em modo debug
             
             packetNumber++; //numero do pacote para efeitos de debugging
             seqNumber++;  //numero da sequencia em modulo 255 para determinar se recebemos pacote certo
