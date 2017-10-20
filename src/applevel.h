@@ -30,7 +30,7 @@ int getFileSize(unsigned char *buff, int sizeBuff);
 
 int receiveStart(int fd, char *fileName);
 
-size_t receiveData(FILE *file, int fd);
+size_t receiveData(FILE *file, int fd, int fileSize);
 
 void closeFile(FILE *file);
 

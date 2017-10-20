@@ -162,10 +162,12 @@ size_t sendData(FILE *file, int fd,int fileSize){ //lê blocos do ficheiro, e en
         
         //printf("Packet number %d sent\n", packetNumber);
         
-        //atualizar progress bar
-        printProgress( (double)total/(double)fileSize );
         
         total = total + bytesRead; //total guarda numero total de bytes enviados
+        
+        //atualizar progress bar
+        printProgress( (double)total/(double)fileSize );
+
         packetNumber++; //numero do pacote atual para efeitos de debugging
         seqNumber++; //numero do pacote em módulo 255 para incluir no cabeçalho do pacote
         if(seqNumber == 256) seqNumber = 0;
@@ -185,7 +187,7 @@ int getPacketSize(unsigned char * packet){ //determina tamanho do pacote
     return packetSize;
 }
 
-size_t receiveData(FILE *file, int fd){ //recebe pacotes de dados e escreve bloco a bloco num ficheiro até receber o pacote de controlo END
+size_t receiveData(FILE *file, int fd, int fileSize){ //recebe pacotes de dados e escreve bloco a bloco num ficheiro até receber o pacote de controlo END
     unsigned char packet[PACKET_LEN];
     size_t bytesWritten = 0;
     size_t total = 0;
@@ -232,7 +234,12 @@ size_t receiveData(FILE *file, int fd){ //recebe pacotes de dados e escreve bloc
                 return -1;
             }
             
+            
+            
             total = total + bytesWritten; //soma de todos os bytes recebidos
+            
+            //atualizar progress bar
+            printProgress( (double)total/(double)fileSize );
             
             //printf("Packet number %d received\n", packetNumber);
             packetNumber++; //numero do pacote para efeitos de debugging
@@ -244,6 +251,7 @@ size_t receiveData(FILE *file, int fd){ //recebe pacotes de dados e escreve bloc
         }
         
     }
+    printf("\n"); //por causa do progress bar
     return total; //retorna total de bytes que recebeu / escreveu no ficheiro
 }
 

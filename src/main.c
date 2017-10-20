@@ -102,7 +102,7 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        bytesTransmitted = sendData(f, fd, fileSize); 
+        bytesTransmitted = sendData(f, fd, fileSize);
         
         if(bytesTransmitted < 0){
             fclose(f);
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
         
         //printf("openFileReceiver() OK\n");
         
-        bytesReceived = receiveData(f, fd); //recebe e escreve dados no ficheiro
+        bytesReceived = receiveData(f, fd, fileSize); //recebe e escreve dados no ficheiro
         if(bytesReceived < 0){
             printf("Erro ao receber ficheiro\n");
             fclose(f);
