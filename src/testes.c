@@ -111,7 +111,7 @@ void teste_cli(char** argv){
 
 		printf("Qual o atraso adicional que vai ser inserido? (em milisegundos)\n");
 		assert(scanf("%d", &t_prop)>0);
-		assert(t_prop > 0);
+		assert(t_prop >= 0);
 
 		printf("Qual das seguintes Baudrates pretende escolher?\n");
 		printf("1-2400 2-4800 3-9600 4-19200 5-38400 6-57600 7-115200 8-230400 9-460800?\n");
