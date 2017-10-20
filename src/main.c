@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <time.h>
 #include "linklayer.h"
 #include "alarm.h"
 #include "applevel.h"
@@ -28,6 +29,8 @@ int main(int argc, char** argv)
     FILE *f;
     int bytesReceived = 0;
     int bytesTransmitted = 0;
+	clock_t start, end;
+	double cpu_time_used;
 	
 
     if ( (argc < 3) || 
@@ -65,6 +68,9 @@ int main(int argc, char** argv)
             return -1;
         }
         
+		//Começar a contar tempo
+		start = clock();
+
         if(llopen(fd, TRANSMITTER) < 0 ){
             printf("llopen() falhou\n");
             sleep(1);
@@ -100,14 +106,22 @@ int main(int argc, char** argv)
             printf("Erro ao enviar END packet\n");
             return 0;
         }
+
+		
+		
         
         fclose(f);
         
         if(llclose(fd, TRANSMITTER)<0){
             printf("llclose() falhou\n");
         }
+
+		//Fim da contagem do tempo com printf
+		end = clock();
         
         printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
+		printf("Tempo de envio: %f\n", ((double)(end-start))/CLOCKS_PER_SEC);
+
 
 		
 	}

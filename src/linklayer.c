@@ -262,10 +262,15 @@ int llread(int fd,unsigned char *buffer){
 					insertHeaderError(buff, length, HEADER_ERROR_RATE);
 					insertPacketError(buff, length, PACKET_ERROR_RATE);
 
-					alarmFlag = 0;
+					
 					alarm(0);
 					alarm(T_PROP);
-					while(!alarmFlag);
+					alarmFlag = 0;
+					alarmCounter = 1;
+					while(alarmCounter <= 1){
+						printf(".");
+						//printf("alarmFlag = %d alarmCounter = %d \n",alarmFlag,alarmCounter);
+					}
 				}
 				//_____________________________________________________________
 
