@@ -65,11 +65,10 @@ void teste_cli(char** argv){
 	int max_tries;//OK
 	int time_out;//OK
 
-	printf("Pretende entrar em modo de teste? (s/n)");
-	assert(scanf("%c", &command)>0);
-	assert(scanf("%c", &command)>0);
+	printf("Pretende entrar em modo de teste? (s-1/n-0)");
+	assert(scanf("%d", &command)>0);
 
-	if(command == 's'){
+	if(command == 1){
 		mode = ACTIVE;
 
 		printf("Qual o tempo de timeout? (secs)\n");
