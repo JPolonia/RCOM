@@ -87,8 +87,6 @@ void teste_cli(char** argv){
 		printf("Qual o tamanho máximo que a trama pode ter?\n");
 		assert(scanf("%d", &max_size)>0);
 		assert(max_size > 20);
-
-		
 		
 		printf("Qual a probabilidade de haver erro no cabeçalho das tramas I? (entre 0 e 1)\n");
 		assert(scanf("%lf", &headerErrorRate)>0);
@@ -98,7 +96,7 @@ void teste_cli(char** argv){
 		assert(scanf("%lf", &packetErrorRate)>0);
 		assert(packetErrorRate >= 0 && packetErrorRate < 1);
 
-		printf("Qual o atraso adicional vai ser inserido? (em milisegundos)\n");
+		printf("Qual o atraso adicional que vai ser inserido? (em milisegundos)\n");
 		assert(scanf("%d", &t_prop)>0);
 		assert(t_prop > 0);
 
@@ -146,8 +144,6 @@ void teste_cli(char** argv){
 	
 
 	//preencher estruturas_______________________________________________
-
-	//Initialize linkLayer
 
 	if(mode == ACTIVE){ //MODO TESTE
 		e = initLinkLayer(argv[1], baud,0, time_out, max_tries, max_size);
