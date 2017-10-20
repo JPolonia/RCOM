@@ -170,6 +170,7 @@ size_t sendData(FILE *file, int fd,int fileSize){ //lê blocos do ficheiro, e en
         seqNumber++; //numero do pacote em módulo 255 para incluir no cabeçalho do pacote
         if(seqNumber == 256) seqNumber = 0;
     }
+    printf("\n"); // por causa do progress bar
     return total;
 }
 
