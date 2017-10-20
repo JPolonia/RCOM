@@ -231,6 +231,7 @@ void teste_cli(char** argv){
 
 	printf("Pretende entrar em modo de teste? (s/n)");
 	scanf("%c", &command);
+	scanf("%c", &command);
 
 	if(command == 's'){
 		mode = ACTIVE;
