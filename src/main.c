@@ -49,9 +49,10 @@ int main(int argc, char** argv)
     }
 
 
-    //Initialize linkLayer
+    /*//Initialize linkLayer
     e = initLinkLayer(argv[1],BAUDRATE,0,TIMEOUT,MAX_TRIES, MAX_SIZE);
-    if (e <0) { printf("Couldnt initialize linklayer\n");; exit(-1); }
+    if (e <0) { printf("Couldnt initialize linklayer\n");; exit(-1); }*/
+	teste_cli(argv);
 
     //Open Serial Port
     fd = openSerialPort(ll->port);
