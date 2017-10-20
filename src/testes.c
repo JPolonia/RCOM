@@ -44,7 +44,7 @@ int insertPacketError(unsigned char *buff, int length, double errorRate){
 void teste_cli(char** argv){
 	int e;
 
-	char command;
+	int command;
 	int mode = 0; //=1 -> testes ativados
 
 	//FER
