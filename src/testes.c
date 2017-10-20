@@ -28,16 +28,20 @@ int initTestes(	int active,
 }
 
 int insertHeaderError(unsigned char *buff, int length, double errorRate){
-	if(rand() < (RAND_MAX+1u) / (1/errorRate)){
-		buff[3] = buff[3] ^ 0xFF;
-	}
+    if(errorRate != 0){
+        if(rand() < (RAND_MAX+1u) / (1/errorRate)){
+            buff[3] = buff[3] ^ 0xFF;
+        }
+    }
 	return 1;
 }
 
 int insertPacketError(unsigned char *buff, int length, double errorRate){
-	if(rand() < (RAND_MAX+1u) / (1/errorRate)){
-		buff[length - 2] = buff[length - 2] ^ 0xFF;
-	}
+    if(errorRate != 0){
+        if(rand() < (RAND_MAX+1u) / (1/errorRate)){
+            buff[length - 2] = buff[length - 2] ^ 0xFF;
+        }
+    }
 	return 1;
 }
 
@@ -65,8 +69,9 @@ void teste_cli(char** argv){
 	int max_tries;//OK
 	int time_out;//OK
 
-	printf("Pretende entrar em modo de teste? (s-1/n-0)");
+	printf("Pretende entrar em modo de teste? ( s-1 / n-0 )\n");
 	assert(scanf("%d", &command)>0);
+    assert(command == 1 || command == 0);
 
 	if(command == 1){
 		mode = ACTIVE;
@@ -87,17 +92,17 @@ void teste_cli(char** argv){
 		
 		printf("Qual a probabilidade de haver erro no cabeçalho das tramas I? (entre 0 e 1)\n");
 		assert(scanf("%lf", &headerErrorRate)>0);
-		assert(headerErrorRate > 0 && headerErrorRate <1);
+		assert(headerErrorRate >= 0 && headerErrorRate < 1);
 			
 		printf("Qual a probabilidade de haver erro nos dados das tramas I? (entre 0 e 1)\n");
 		assert(scanf("%lf", &packetErrorRate)>0);
-		assert(packetErrorRate > 0 && packetErrorRate < 1);
+		assert(packetErrorRate >= 0 && packetErrorRate < 1);
 
-		printf("Qual o atraso adicional vai ser inserido?\n");
+		printf("Qual o atraso adicional vai ser inserido? (em milisegundos)\n");
 		assert(scanf("%d", &t_prop)>0);
 		assert(t_prop > 0);
 
-		printf("Qual dos seguintes valores pretende inserir?\n");
+		printf("Qual das seguintes Baudrates pretende escolher?\n");
 		printf("1-2400 2-4800 3-9600 4-19200 5-38400 6-57600 7-115200 8-230400 9-460800?\n");
 		assert(scanf("%d", &nbaud)>0);
 		assert(nbaud >= 1 && nbaud <= 9);
