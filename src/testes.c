@@ -2,7 +2,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <assert.h>
 #include "testes.h"
+#include "linklayer.h"
+
+#define ACTIVE 1
 
 testes *tt;
 
@@ -23,11 +27,6 @@ int initTestes(	int active,
 	return 1;
 }
 
-
-
-
-
-
 int insertHeaderError(unsigned char *buff, int length, double errorRate){
 	if(rand() < (RAND_MAX+1u) / (1/errorRate)){
 		buff[3] = buff[3] ^ 0xFF;
@@ -41,3 +40,127 @@ int insertPacketError(unsigned char *buff, int length, double errorRate){
 	}
 	return 1;
 }
+
+void teste_cli(char** argv){
+	int e;
+
+	char command;
+	int mode = 0; //=1 -> testes ativados
+
+	//FER
+	double headerErrorRate;
+	double packetErrorRate;
+
+	//T_PROP
+	int t_prop; //em milisegundos
+
+	//C -> BaudRate
+	int nbaud; //OK
+	int baud; //OK
+
+	//Tamanho da trama
+	int max_size;//OK
+
+	
+	int max_tries;//OK
+	int time_out;//OK
+
+	printf("Pretende entrar em modo de teste? (s/n)");
+	assert(scanf("%c", &command)>0);
+	assert(scanf("%c", &command)>0);
+
+	if(command == 's'){
+		mode = ACTIVE;
+
+		printf("Qual o tempo de timeout? (secs)\n");
+		assert(scanf("%d", &time_out)>0);
+		assert(time_out >= 0);
+
+		printf("Qual o número máximo de tentativas após timeout?\n");
+		assert(scanf("%d", &max_tries)>0);
+		assert(max_tries >= 0);
+
+		printf("Qual o tamanho máximo que a trama pode ter?\n");
+		assert(scanf("%d", &max_size)>0);
+		assert(max_size > 20);
+
+		
+		
+		printf("Qual a probabilidade de haver erro no cabeçalho das tramas I? (entre 0 e 1)\n");
+		assert(scanf("%lf", &headerErrorRate)>0);
+		assert(headerErrorRate > 0 && headerErrorRate <1);
+			
+		printf("Qual a probabilidade de haver erro nos dados das tramas I? (entre 0 e 1)\n");
+		assert(scanf("%lf", &packetErrorRate)>0);
+		assert(packetErrorRate > 0 && packetErrorRate < 1);
+
+		printf("Qual o atraso adicional vai ser inserido?\n");
+		assert(scanf("%d", &t_prop)>0);
+		assert(t_prop > 0);
+
+		printf("Qual dos seguintes valores pretende inserir?\n");
+		printf("1-2400 2-4800 3-9600 4-19200 5-38400 6-57600 7-115200 8-230400 9-460800?\n");
+		assert(scanf("%d", &nbaud)>0);
+		assert(nbaud >= 1 && nbaud <= 9);
+
+		switch (nbaud){
+			case 1:	
+				baud = B2400;
+				break;
+			case 2:	
+				baud = B4800;
+				break;
+			case 3:	
+				baud = B9600;
+				break;
+			case 4:	
+				baud = B19200;
+				break;
+			case 5:	
+				baud = B38400;
+				break;
+			case 6:	
+				baud = B57600;
+				break;
+			case 7:	
+				baud = B115200;
+				break;
+			case 8:	
+				baud = B230400;
+				break;
+			case 9:	
+				baud = B460800;
+				break;
+	
+		}
+		
+	}
+	else{
+		mode = !ACTIVE;
+	}	
+
+	
+
+	//preencher estruturas_______________________________________________
+
+	//Initialize linkLayer
+
+	if(mode == ACTIVE){ //MODO TESTE
+		e = initLinkLayer(argv[1], baud,0, time_out, max_tries, max_size);
+		if (e <0) { printf("Couldnt initialize linklayer\n"); exit(-1); }
+
+
+		e = initTestes(mode, headerErrorRate, packetErrorRate, t_prop);
+		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
+
+
+	}
+	else{ //MODO NORMAL
+
+		e = initTestes(mode, 0, 0, 0);
+		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
+
+	}
+}
+
+
