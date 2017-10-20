@@ -37,6 +37,8 @@ const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
+
+
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 				  unsigned int timeout,unsigned int numTransmissions, int max_size){
 
@@ -259,9 +261,9 @@ int llread(int fd,unsigned char *buffer){
                 state=2;
 
 				//Geração de erros_____________________________________________
-				if(ERROR_ACTIVE){
-					insertHeaderError(buff, length, HEADER_ERROR_RATE);
-					insertPacketError(buff, length, PACKET_ERROR_RATE);
+				if(tt->active){
+					insertHeaderError(buff, length, tt->headerErrorRate);
+					insertPacketError(buff, length, tt->packetErrorRate);
 
 					usleep(T_PROP * 1000);
 				}

@@ -22,7 +22,8 @@
 
 
 
-linkLayer* ll;
+//linkLayer* ll;
+
 
 void teste_cli();
 
@@ -65,10 +66,6 @@ int main(int argc, char** argv)
 
     //Initialize alarm
 	initAlarm();
-
-	//Initialize testes
-	initStat();
-
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
@@ -207,8 +204,8 @@ void teste_cli(char** argv){
 	int t_prop; //em milisegundos
 
 	//C -> BaudRate
-	int nbaud;
-	int baud;
+	int nbaud; //OK
+	int baud; //OK
 
 	//Tamanho da trama
 	int max_size;//OK
@@ -298,10 +295,20 @@ void teste_cli(char** argv){
 	if(mode == ACTIVE){ //MODO TESTE
 		e = initLinkLayer(argv[1], baud,0, time_out, max_tries, max_size);
 		if (e <0) { printf("Couldnt initialize linklayer\n"); exit(-1); }
+
+		e = initTestes(mode, headerErrorRate, packetErrorRate, t_prop);
+		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
+
+
 	}
 	else{ //MODO NORMAL
 		e = initLinkLayer(argv[1],BAUDRATE,0,TIMEOUT,MAX_TRIES, max_size);
     	if (e <0) { printf("Couldnt initialize linklayer\n");; exit(-1); }
+
+		
+		e = initTestes(mode, 0, 0, 0);
+		if (e <0) { printf("Couldnt initialize testes\n"); exit(-1); }
+
 	}
 
 

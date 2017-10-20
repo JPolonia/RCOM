@@ -3,16 +3,16 @@
 
 #pragma once
 
+
+
 typedef struct testes {
-	int ferTestActive;
+	int active;
 	double headerErrorRate;
 	double packetErrorRate;
-
-	int TpropTestActive;
 	int addedDelay;
-
-	int capacityTestActive;
 } testes;
+
+extern testes *tt;
 
 
 void initStat();

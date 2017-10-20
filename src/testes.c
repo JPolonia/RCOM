@@ -2,11 +2,31 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include "testes.h"
+
+testes *tt;
+
+int initTestes(	int active,
+				double headerErrorRate,
+				double packetErrorRate,
+				int addedDelay){
 
 
-void initStat(){
-	srand ( time(NULL) );
+	srand( time(NULL) );
+
+	tt = (testes*) malloc(sizeof(testes));
+	tt->active = active;
+	tt->headerErrorRate = headerErrorRate;
+	tt->packetErrorRate = packetErrorRate;
+	tt->addedDelay = addedDelay;
+
+	return 1;
 }
+
+
+
+
+
 
 int insertHeaderError(unsigned char *buff, int length, double errorRate){
 	if(rand() < (RAND_MAX+1u) / (1/errorRate)){
