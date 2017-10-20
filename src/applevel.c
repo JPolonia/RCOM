@@ -170,7 +170,7 @@ size_t sendData(FILE *file, int fd){ //funciona
             return -1;
         }
         
-        printf("Packet number %d sent\n", packetNumber);
+        //printf("Packet number %d sent\n", packetNumber);
         
         total = total + bytesRead;
         packetNumber++;
@@ -238,7 +238,7 @@ size_t receiveData(FILE *file, int fd){ //funciona
             }
             total = total + bytesWritten;
             
-            printf("Packet number %d received\n", packetNumber);
+            //printf("Packet number %d received\n", packetNumber);
             packetNumber++;
             seqNumber++;
             if(seqNumber == 256) seqNumber = 0;

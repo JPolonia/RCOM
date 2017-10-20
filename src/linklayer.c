@@ -126,7 +126,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 				} else i++;
 				break;
 			case 4: 
-				printf("Frame received!\n");
+				//printf("Frame received!\n");
 				i=0; 			
 				state = 5;
 				break;
@@ -150,7 +150,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 	msg[1] = A;
 	msg[4] = FLAG_RCV;
 	
-	printf("*** Trying to establish a connection. ***\n");
+	//printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
 		case TRANSMITTER: //OK
             msg[2] = C_SET;
@@ -165,7 +165,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 
                 /*Envia trama SET*/
                 res = write(fd,msg,5);
-                printf("%d bytes sent\n",res);
+                //printf("%d bytes sent\n",res);
                 
                 readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
@@ -178,7 +178,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                 readpacket(fd,buff,RECEIVER);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
                 if (error) {
-                    printf("Received an invalid frame\n");
+                    //printf("Received an invalid frame\n");
                     continue;
                 }
                 else {//Envia resposta UA
@@ -200,7 +200,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 		return -1;
         
     }
-    printf("*** Successfully established a connection. ***\n");
+    //printf("*** Successfully established a connection. ***\n");
     alarm(0); //cancela alarme anterior
 	return 1; 
 	
@@ -268,7 +268,7 @@ int llread(int fd,unsigned char *buffer){
 					alarmFlag = 0;
 					alarmCounter = 1;
 					while(alarmCounter <= 1){
-						printf(".");
+						//printf(".");
 						//printf("alarmFlag = %d alarmCounter = %d \n",alarmFlag,alarmCounter);
 					}
 				}
@@ -291,18 +291,18 @@ int llread(int fd,unsigned char *buffer){
                     RR[2] = C_RR_1; //queremos seq 1
                     RR[3] = RR[1]^RR[2];
                     if(write(fd, RR, 5) != 5){
-                        printf("Falha no envio de RR\n");
+                        //printf("Falha no envio de RR\n");
                     }
-                    printf("Trama repetida, RR envidado\n");
+                    //printf("Trama repetida, RR envidado\n");
                     state=1;
                 }
                 else if(buff[2]==C_I_1 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
                     RR[2] = C_RR_0; //queremos seq 0
                     RR[3] = RR[1]^RR[2];
                     if(write(fd, RR, 5) != 5){
-                        printf("Falha no envio de RR\n");
+                        //printf("Falha no envio de RR\n");
                     }
-                    printf("Trama repetida, RR envidado\n");
+                    //printf("Trama repetida, RR envidado\n");
                     state=1;
                 }
                 else{ //recebemos o que queriamos
@@ -324,20 +324,20 @@ int llread(int fd,unsigned char *buffer){
                         RR[2] = C_RR_1;
                         RR[3] = RR[1]^RR[2];
                         if(write(fd, RR, 5) != 5){
-                            printf("Falha ao enviar RR\n");
+                            //printf("Falha ao enviar RR\n");
                         }
-                        printf("RR1 enviado\n");
+                        //printf("RR1 enviado\n");
                     }
                     else if(ll->sequenceNumber  == 1){ //envia RR0
                         ll->sequenceNumber = 0;
                         RR[2] = C_RR_0;
                         RR[3] = RR[1]^RR[2];
                         if(write(fd, RR, 5) != 5){
-                            printf("Falha ao enviar RR\n");
+                            //printf("Falha ao enviar RR\n");
                         }
-                        printf("RR0 enviado\n");
+                        //printf("RR0 enviado\n");
                     }
-                    printf("*** Received valid frame ***\n");
+                    //printf("*** Received valid frame ***\n");
                     state = 5;
                 }
                 else { //dados invalidos, enviar REJ
@@ -345,11 +345,11 @@ int llread(int fd,unsigned char *buffer){
                         REJ[2] = C_REJ_0;
                         REJ[3] = (REJ[1]^REJ[2]);
                         if(write(fd, REJ, 5) != 5){
-                            printf("Falha ao enviar REJ\n");
+                            //printf("Falha ao enviar REJ\n");
                         }
-                        printf("REJ0 enviado\n");
+                        //printf("REJ0 enviado\n");
                         /*for(i = 0;i < 5;i++){
-                            printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
+                            //printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
                         }*/
                     }
                     else if(ll->sequenceNumber == 1){
@@ -358,7 +358,7 @@ int llread(int fd,unsigned char *buffer){
                         if(write(fd, REJ, 5) != 5){
                             printf("Falha ao enviar REJ\n");
                         }
-                        printf("REJ1 enviado\n");
+                        //printf("REJ1 enviado\n");
                         /*for(i = 0;i < 5;i++){
                             printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
                         }*/
@@ -421,7 +421,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
     unsigned char ack[MAX_SIZE];
     
     if( ((2*(length+1)) + 5) >  MAX_SIZE){ //verifica que buffer cabe na trama
-        printf("Este pacote não cabe na trama.\n");
+        //printf("Este pacote não cabe na trama.\n");
         return -1;
     }
     
@@ -445,7 +445,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
        
         
         bytesWritten = write(fd ,trama ,frameSize);  //Envia trama I
-        printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
+        //printf("%d bytes sent, frame size = %d\n", bytesWritten, frameSize);
         
         for(i = 0; i < 5; i++){
             ack[i] = 0;
@@ -467,25 +467,25 @@ int llwrite(int fd, unsigned char *buffer , int length){
         }
         else{    //ack válido
             if((ack[2] == C_RR_0) && (ll->sequenceNumber == 1)){ //Recebemos RR0
-                printf("*** RR0 received ***\n");
+               //printf("*** RR0 received ***\n");
                 ll->sequenceNumber = 0;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
             else if((ack[2] == C_RR_1) && (ll->sequenceNumber == 0)){ //Recebemos RR1
-                printf("*** RR1 received ***\n");
+                //printf("*** RR1 received ***\n");
                 ll->sequenceNumber = 1;
                 error = 0;
                 alarm(0); //cancela alarme anterior
                 break;
             }
             else if((ack[2] == C_REJ_0) || (ack[2] == C_REJ_1)){  //Recebemos REJ
-                printf("*** REJ received ***\n");
+                //printf("*** REJ received ***\n");
                 alarmCounter = 1; //começamos transmissão de novo?
             }
             else{ //ack inválido
-                printf("*** ACK é inválido ***\n");
+                //printf("*** ACK é inválido ***\n");
                 /*for(i = 0;i < 5;i++){
                     printf("ACK[%d] = 0x%02x\n", i, ack[i]);
                 }*/
@@ -508,7 +508,7 @@ int llclose(int fd, unsigned char mode){
     int error,i;
     int res;
     
-    printf("*** Trying to close the connection. ***\n");
+    //printf("*** Trying to close the connection. ***\n");
     switch(mode){
         case TRANSMITTER:
             alarmCounter = 1;
@@ -521,16 +521,16 @@ int llclose(int fd, unsigned char mode){
                 
                 //Envia trama DISC
                 res = write(fd,DISC,5);
-                printf("%d bytes sent\n",res);
-                printf("DISC sent\n");
+                //printf("%d bytes sent\n",res);
+               // printf("DISC sent\n");
                 
                 readpacket(fd,buff,TRANSMITTER); //Espera pela resposta DISC
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
             }
             alarm(0);
             res = write(fd, UA, 5);
-            printf("%d bytes sent\n",res);
-            printf("UA sent\n");
+           // printf("%d bytes sent\n",res);
+            //printf("UA sent\n");
             break;
             
         case RECEIVER:
@@ -544,7 +544,7 @@ int llclose(int fd, unsigned char mode){
                     printf("Received a frame but it isn't DISC, still waiting for DISC\n");
                     continue;
                 }
-                printf("DISC received\n");
+                //printf("DISC received\n");
                 
                 error = 1;
                 alarmCounter = 1;
@@ -556,8 +556,8 @@ int llclose(int fd, unsigned char mode){
                     
                     //Envia trama DISC
                     res = write(fd, DISC, 5);
-                    printf("%d bytes sent\n",res);
-					printf("DISC sent\n");
+                    //printf("%d bytes sent\n",res);
+					//printf("DISC sent\n");
 					
 					for(i=0;i<5;i++){
 						buff[i] = 0;
@@ -565,15 +565,15 @@ int llclose(int fd, unsigned char mode){
                     
                     readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
 					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-					if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+					//if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
                     if(!error) break;
                 }
                 if(!error){
-                    printf("Received UA\n");
+                    //printf("Received UA\n");
                     break;
                 }
                 else{
-					printf("Couldn't receive UA\n");
+					//printf("Couldn't receive UA\n");
 					
                     return -1;
                 }
@@ -587,7 +587,7 @@ int llclose(int fd, unsigned char mode){
 	sleep(1);
     closeSerialPort(fd); //fazemos isto aqui?
 	sleep(1);
-    printf("*** Successfully closed the connection. ***\n");
+    //printf("*** Successfully closed the connection. ***\n");
     alarm(0); //cancela alarme anterior
     return 1;
 }

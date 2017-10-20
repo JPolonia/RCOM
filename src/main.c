@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
@@ -29,8 +30,12 @@ int main(int argc, char** argv)
     FILE *f;
     int bytesReceived = 0;
     int bytesTransmitted = 0;
-	clock_t start, end;
-	double cpu_time_used;
+	
+	time_t start_t, end_t;
+	double time_used;
+
+	long start,end;
+	struct timeval timecheck;
 	
 
     if ( (argc < 3) || 
@@ -67,9 +72,12 @@ int main(int argc, char** argv)
             printf("Erro em scanf()\n");
             return -1;
         }
-        
+	
 		//Começar a contar tempo
-		start = clock();
+		start_t = time(NULL);
+		
+		gettimeofday(&timecheck,NULL);
+		start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
 
         if(llopen(fd, TRANSMITTER) < 0 ){
             printf("llopen() falhou\n");
@@ -116,17 +124,14 @@ int main(int argc, char** argv)
             printf("llclose() falhou\n");
         }
 
-		//Fim da contagem do tempo com printf
-		end = clock();
-        
-        printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
-		printf("Tempo de envio: %f\n", ((double)(end-start))/CLOCKS_PER_SEC);
-
-
+		printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
 		
 	}
 	else if(mode == RECEIVER){
-	
+
+		//Começar a contar tempo
+		start = time(NULL);
+
         if(llopen(fd, RECEIVER) < 0){
             printf("llopen() falhou\n");
             sleep(1);
@@ -168,6 +173,17 @@ int main(int argc, char** argv)
         printf("Received %d bytes\n", bytesReceived);
 
 	}
+
+	//Fim da contagem do tempo com printf
+	end_t = time(NULL);
+    
+	gettimeofday(&timecheck,NULL);
+	end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+   
+	time_used = ((double)(end_t-start_t));
+	printf("Tempo usado: %.2f \n", time_used);
+	
+	printf("%ld milliseconds elapsed\n", (end-start));
 
     sleep(1);
    
