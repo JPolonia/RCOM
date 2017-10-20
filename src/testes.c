@@ -3,10 +3,10 @@
 #include <math.h>
 #include <time.h>
 
-/*
+
 void initStat(){
 	srand ( time(NULL) );
-}*/
+}
 
 int insertHeaderError(unsigned char *buff, int length, double errorRate){
 	if(rand() < (RAND_MAX+1u) / (1/errorRate)){

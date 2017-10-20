@@ -38,7 +38,7 @@ const int C_DISC = 0x0b;
 linkLayer* ll;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
-				  unsigned int timeout,unsigned int numTransmissions){
+				  unsigned int timeout,unsigned int numTransmissions, int max_size){
 
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
 	strcpy(ll->port, port);
@@ -46,6 +46,7 @@ int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 	ll->sequenceNumber = sequenceNumber;
 	ll->timeout = timeout;
 	ll->numTransmissions = numTransmissions;
+	ll->max_size = max_size;
 
 	return 1;
 }
@@ -185,7 +186,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                     msg[2] = C_UA;
                     msg[3] = A^C_UA;
                     res = write(fd,msg,5);
-                    printf("%d bytes sent\n",res);
+                    //printf("%d bytes sent\n",res);
                     break;
                 }
             }
@@ -244,8 +245,8 @@ unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
 
 int llread(int fd,unsigned char *buffer){
 
-	unsigned char buff[MAX_SIZE]; //para receber trama inteira
-	unsigned char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
+	unsigned char buff[ll->max_size]; //para receber trama inteira
+	unsigned char buff_destuff[ll->max_size-5];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {FLAG_RCV, A, C_RR_0, A^C_RR_0, FLAG_RCV};
     unsigned char REJ[5] = {FLAG_RCV, A, C_REJ_0, A^C_REJ_0, FLAG_RCV};
 	int tam = 1, state=1, i = 0, length = 0;
@@ -404,15 +405,15 @@ int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuff
 int llwrite(int fd, unsigned char *buffer , int length){
 
     unsigned char BCC2;
-    unsigned char trama[MAX_SIZE];
+    unsigned char trama[ll->max_size];
     int dataAndBCC2Length = 0;
     int frameSize = 0;
     int error = 1;
     int bytesWritten = 0;
     int i = 0;
-    unsigned char ack[MAX_SIZE];
+    unsigned char ack[ll->max_size];
     
-    if( ((2*(length+1)) + 5) >  MAX_SIZE){ //verifica que buffer cabe na trama
+    if( ((2*(length+1)) + 5) >  ll->max_size){ //verifica que buffer cabe na trama
         //printf("Este pacote não cabe na trama.\n");
         return -1;
     }

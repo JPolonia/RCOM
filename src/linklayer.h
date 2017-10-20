@@ -17,6 +17,7 @@
 typedef struct linkLayer {
 	char port[20]; //Port /dev/ttySx
 	int baudRate; //Transmission speed
+	int max_size;
 	unsigned int sequenceNumber; //Frame sequence number (0, 1)
 	unsigned int timeout; //Valor do temporizador
 	unsigned int numTransmissions; //Numero Tentativas em caso de falha
@@ -27,7 +28,7 @@ typedef struct linkLayer {
 extern linkLayer* ll;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
-	unsigned int timeout,unsigned int numTransmissions);
+	unsigned int timeout,unsigned int numTransmissions, int max_size);
 int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);

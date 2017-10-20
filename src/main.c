@@ -11,15 +11,20 @@
 #include "linklayer.h"
 #include "alarm.h"
 #include "applevel.h"
+#include "testes.h"
 
-
+#define ACTIVE 1
 
 #define BAUDRATE B38400
 
 #define MAX_TRIES 3
 #define TIMEOUT 3
 
+
+
 linkLayer* ll;
+
+void teste_cli();
 
 int main(int argc, char** argv)
 {
@@ -30,10 +35,8 @@ int main(int argc, char** argv)
     FILE *f;
     int bytesReceived = 0;
     int bytesTransmitted = 0;
-	
-	time_t start_t, end_t;
-	double time_used;
 
+	//Para contar tempo
 	long start,end;
 	struct timeval timecheck;
 	
@@ -47,7 +50,7 @@ int main(int argc, char** argv)
 
 
     //Initialize linkLayer
-    e = initLinkLayer(argv[1],BAUDRATE,0,TIMEOUT,MAX_TRIES);
+    e = initLinkLayer(argv[1],BAUDRATE,0,TIMEOUT,MAX_TRIES, MAX_SIZE);
     if (e <0) { printf("Couldnt initialize linklayer\n");; exit(-1); }
 
     //Open Serial Port
@@ -62,6 +65,9 @@ int main(int argc, char** argv)
     //Initialize alarm
 	initAlarm();
 
+	//Initialize testes
+	initStat();
+
     
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
@@ -74,8 +80,6 @@ int main(int argc, char** argv)
         }
 	
 		//Começar a contar tempo
-		start_t = time(NULL);
-		
 		gettimeofday(&timecheck,NULL);
 		start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
 
@@ -125,6 +129,12 @@ int main(int argc, char** argv)
         }
 
 		printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
+
+		//Fim da contagem do tempo
+		gettimeofday(&timecheck,NULL);
+		end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+	   
+		printf("%ld milliseconds elapsed\n", (end-start));
 		
 	}
 	else if(mode == RECEIVER){
@@ -174,18 +184,126 @@ int main(int argc, char** argv)
 
 	}
 
-	//Fim da contagem do tempo com printf
-	end_t = time(NULL);
-    
-	gettimeofday(&timecheck,NULL);
-	end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
-   
-	time_used = ((double)(end_t-start_t));
-	printf("Tempo usado: %.2f \n", time_used);
 	
-	printf("%ld milliseconds elapsed\n", (end-start));
 
     sleep(1);
    
     return 0;
 }
+
+
+void teste_cli(char** argv){
+	int e;
+
+	char command;
+	int mode = 0; //=1 -> testes ativados
+
+	//FER
+	double headerErrorRate;
+	double packetErrorRate;
+
+	//T_PROP
+	int t_prop; //em milisegundos
+
+	//C -> BaudRate
+	int nbaud;
+	int baud;
+
+	//Tamanho da trama
+	int max_size;//OK
+
+	
+	int max_tries;//OK
+	int time_out;//OK
+
+	printf("Qual o tempo de timeout? (secs)\n");
+	scanf("%d", &time_out);
+	assert(max_tries >= 0);
+
+	printf("Qual o número máximo de tentativas após timeout?\n");
+	scanf("%d", &max_tries);
+	assert(max_tries >= 0);
+
+	printf("Qual o tamanho máximo que a trama pode ter?\n");
+	scanf("%d", &max_size);
+	assert(max_size > 20);
+
+	printf("Pretende entrar em modo de teste? (s/n)");
+	scanf("%c", &command);
+
+	if(command == 's'){
+		mode = ACTIVE;
+		
+		printf("Qual a probabilidade de haver erro no cabeçalho das tramas I? (entre 0 e 1)\n");
+		scanf("%lf", &headerErrorRate);
+		assert(headerErrorRate <= 0 || headerErrorRate >=1);
+			
+		printf("Qual a probabilidade de haver erro nos dados das tramas I? (entre 0 e 1)\n");
+		scanf("%lf", &packetErrorRate);
+		assert(packetErrorRate > 0 && packetErrorRate < 1);
+
+		printf("Qual o atraso adicional vai ser inserido?\n");
+		scanf("%d", &t_prop);
+		assert(t_prop > 0);
+
+		printf("Qual dos seguintes valores pretende inserir?\n");
+		printf("1-2400 2-4800 3-9600 4-19200 5-38400 6-57600 7-115200 8-230400 9-460800?\n");
+		scanf("%d", &nbaud);
+		assert(nbaud >= 1 && nbaud <= 9);
+
+		switch (nbaud){
+			case 1:	
+				baud = B2400;
+				break;
+			case 2:	
+				baud = B4800;
+				break;
+			case 3:	
+				baud = B9600;
+				break;
+			case 4:	
+				baud = B19200;
+				break;
+			case 5:	
+				baud = B38400;
+				break;
+			case 6:	
+				baud = B57600;
+				break;
+			case 7:	
+				baud = B115200;
+				break;
+			case 8:	
+				baud = B230400;
+				break;
+			case 9:	
+				baud = B460800;
+				break;
+	
+		}
+		
+	}
+	else{
+		mode = !ACTIVE;
+	}	
+
+	
+
+	//preencher estruturas_______________________________________________
+
+	//Initialize linkLayer
+
+	if(mode == ACTIVE){ //MODO TESTE
+		e = initLinkLayer(argv[1], baud,0, time_out, max_tries, max_size);
+		if (e <0) { printf("Couldnt initialize linklayer\n"); exit(-1); }
+	}
+	else{ //MODO NORMAL
+		e = initLinkLayer(argv[1],BAUDRATE,0,TIMEOUT,MAX_TRIES, max_size);
+    	if (e <0) { printf("Couldnt initialize linklayer\n");; exit(-1); }
+	}
+
+
+
+}
+
+

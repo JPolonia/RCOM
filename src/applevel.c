@@ -9,7 +9,7 @@
 #define FALSE 0
 #define TRUE 1
 
-#define PACKET_LEN  (((MAX_SIZE - 5) / 2) - 1)
+#define PACKET_LEN  (((ll->max_size - 5) / 2) - 1)
 
 #define TRAILER_SIZE 4
 

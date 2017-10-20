@@ -1,7 +1,7 @@
 #ifndef APPLEVEL_H_
 #define APPLEVEL_H_
 
-#define DATA_LEN  (((MAX_SIZE - 5) / 2) - 1)
+#define DATA_LEN  (((ll->max_size - 5) / 2) - 1)
 
 
 int int_pow(int base, int exp);
