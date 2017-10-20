@@ -11,6 +11,11 @@
 #include "alarm.h"
 #include "testes.h"
 
+
+#define ERROR_ACTIVE 1
+#define HEADER_ERROR_RATE 0.1
+#define PACKET_ERROR_RATE 0.3
+
 const int FLAG_RCV = 0x7E;
 const int ESCAPE = 0x7D;
 const int ESCAPE1 = 0x5E;
@@ -86,11 +91,12 @@ int initTermios(int fd){
 
 
 
-void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
+int readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 
 	int res = 0;
 	int state = 1;
 	int i = 0;
+	int length = 0;
 	while(state != 5){
 
 		if(alarmFlag && (mode==TRANSMITTER) ){ 		
@@ -113,6 +119,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 				break;
 			case 3: res = read(fd,buffer+i,1);
 				if((buffer[i]) == FLAG_RCV){
+					length = i + 1;
 					state = 4;
 				} else i++;
 				break;
@@ -127,6 +134,7 @@ void readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
 
 
 	}
+	return length;
 }
 
 int llopen(int fd, unsigned char mode){ //funciona
@@ -238,25 +246,21 @@ int llread(int fd,unsigned char *buffer){
 	unsigned char buff_destuff[MAX_SIZE-5];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {FLAG_RCV, A, C_RR_0, A^C_RR_0, FLAG_RCV};
     unsigned char REJ[5] = {FLAG_RCV, A, C_REJ_0, A^C_REJ_0, FLAG_RCV};
-	int tam = 1, state=1, i = 0;
+	int tam = 1, state=1, i = 0, length = 0;
 
 	while(state!=5){
 		//printf("STATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
-                readpacket(fd, buff, RECEIVER);
+                length = readpacket(fd, buff, RECEIVER);
                 state=2;
 
-				//Geração de erros
+				//Geração de erros_____________________________________________
 				if(ERROR_ACTIVE){
-					insertErrors(buff, length, 0.25, HEADER_ERROR);
-					insertErrors(buff, length, 0.25, DATA_ERROR)
+					insertHeaderError(buff, length, HEADER_ERROR_RATE);
+					insertPacketError(buff, length, PACKET_ERROR_RATE);
 				}
-
-
-
-
-
+				//_____________________________________________________________
 
                 /*for(i=0;i< + 6;i++){
                     printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);

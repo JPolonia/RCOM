@@ -24,12 +24,10 @@ typedef struct linkLayer {
 	struct termios oldtio,newtio; //Struct to save old and new termios
 } linkLayer;
 
-typedef struct stat {
+typedef struct testes {
 	int ferActive;
 	int TpropActive;
-	
-	
-} stat;
+} testes;
 
 extern linkLayer* ll;
 
@@ -39,7 +37,7 @@ int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);
 
-void readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
+int readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
 //devolve trama inteira incluindo 0x7e no inicio e fim em buffer
 //mode = TRANSMITTER ou RECEIVER
 

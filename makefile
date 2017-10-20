@@ -2,7 +2,7 @@
 CCC = gcc
 
 # C++ compiler flags (-g -O2 -Wall)
-CCFLAGS = -g -O3 -Wall
+CCFLAGS = -g -O3 -Wall -lm
 
 # compile flags
 LDFLAGS = -g
