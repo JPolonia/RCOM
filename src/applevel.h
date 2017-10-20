@@ -20,7 +20,7 @@ FILE *openFileTransmmiter(char *pathToFile);
 
 FILE *openFileReceiver(char *pathToFile);
 
-size_t sendData(FILE *file, int fd);
+size_t sendData(FILE *file, int fd, int fileSize);
 
 int getSeqNumber(unsigned char *packet);
 

@@ -102,7 +102,7 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        bytesTransmitted = sendData(f, fd);
+        bytesTransmitted = sendData(f, fd, fileSize); 
         
         if(bytesTransmitted < 0){
             fclose(f);

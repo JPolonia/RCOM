@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <math.h>
 #include "linklayer.h"
+#include "progressbar.h"
 
 
 #define PACKET_LEN  (((ll->max_size - 5) / 2) - 1)
@@ -133,7 +134,7 @@ FILE *openFileReceiver(char *pathToFile){ //abre ficheiro com permissoes de escr
     return file;
 }
 
-size_t sendData(FILE *file, int fd){ //lê blocos do ficheiro, e envia em pacotes
+size_t sendData(FILE *file, int fd,int fileSize){ //lê blocos do ficheiro, e envia em pacotes
     unsigned char buffer[DATA_LEN]; //para ler bloco
     unsigned char packet[PACKET_LEN]; //para construir pacote
     size_t bytesRead = 0;
@@ -160,6 +161,9 @@ size_t sendData(FILE *file, int fd){ //lê blocos do ficheiro, e envia em pacote
         }
         
         //printf("Packet number %d sent\n", packetNumber);
+        
+        //atualizar progress bar
+        printProgress( (double)total/(double)fileSize );
         
         total = total + bytesRead; //total guarda numero total de bytes enviados
         packetNumber++; //numero do pacote atual para efeitos de debugging
