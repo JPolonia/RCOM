@@ -238,7 +238,7 @@ void teste_cli(char** argv){
 		
 		printf("Qual a probabilidade de haver erro no cabeçalho das tramas I? (entre 0 e 1)\n");
 		scanf("%lf", &headerErrorRate);
-		assert(headerErrorRate <= 0 || headerErrorRate >=1);
+		assert(headerErrorRate > 0 && headerErrorRate <1);
 			
 		printf("Qual a probabilidade de haver erro nos dados das tramas I? (entre 0 e 1)\n");
 		scanf("%lf", &packetErrorRate);
