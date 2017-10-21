@@ -33,7 +33,8 @@ int openSerialPort(char* port);
 int closeSerialPort( int fd);
 int initTermios(int fd);
 
-int readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
+int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int index);
+//int readpacket(int fd, unsigned char *buffer, unsigned char mode); //OK
 //devolve trama inteira incluindo 0x7e no inicio e fim em buffer
 //mode = TRANSMITTER ou RECEIVER
 

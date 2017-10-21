@@ -39,9 +39,7 @@ linkLayer* ll;
 
 
 
-int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
-				  unsigned int timeout,unsigned int numTransmissions, int max_size){
-
+int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
 	strcpy(ll->port, port);
 	ll->baudRate = baudRate;
@@ -49,7 +47,6 @@ int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,
 	ll->timeout = timeout;
 	ll->numTransmissions = numTransmissions;
 	ll->max_size = max_size;
-
 	return 1;
 }
 
@@ -60,19 +57,20 @@ int openSerialPort(char* port){
 	return open(port, O_RDWR | O_NOCTTY );
 }
 
-int closeSerialPort( int fd){
+int closeSerialPort(int fd){
 	tcsetattr(fd,TCSANOW,&ll->oldtio);
 	close(fd);
 	return 1;
 }
 
 int initTermios(int fd){
-	// save current port setting
+	/*Save old port settings*/
 	if ( tcgetattr(fd,&ll->oldtio) == -1) { 
 		perror("tcgetattr");
 		exit(-1);
 	}
-	
+    
+    
 	bzero(&ll->newtio, sizeof(ll->newtio));
 	ll->newtio.c_cflag = ll->baudRate | CS8 | CLOCAL | CREAD;
 	ll->newtio.c_iflag = IGNPAR;
@@ -96,48 +94,65 @@ int initTermios(int fd){
 
 
 
-int readpacket(int fd, unsigned char *buffer, unsigned char mode){ //Funciona
+int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int index){ //Funciona
 
-	int res = 0;
+	/*int res = 0;
 	int state = 1;
 	int i = 0;
-	int length = 0;
-	while(state != 5){
+    int length = 0;*/
 
-		if(alarmFlag && (mode==TRANSMITTER) ){ 		
-			break;
-		}
+    int bytesRead;
+    
+    if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+    //while(state != 5){
 
-		switch(state){
-			case 1: res = read(fd,buffer+i,1);
-				if((buffer[i] == FLAG_RCV) && res){
-					i++;
-					state = 2;
-				}
-				break;
-			case 2: res = read(fd,buffer+i,1);
+    if(alarmFlag && (mode==TRANSMITTER) ){ 		
+        return -1;;
+    }
 
-				if (((buffer[i])!= FLAG_RCV) && res){
-					i++;
-					state = 3;
-				}			
-				break;
-			case 3: res = read(fd,buffer+i,1);
-				if((buffer[i]) == FLAG_RCV){
-					length = i + 1;
-					state = 4;
-				} else i++;
-				break;
-			case 4: 
-				//printf("Frame received!\n");
-				i=0; 			
-				state = 5;
-				break;
-		}
-		
+    switch(state){
+        /*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
+        case 1: bytesRead  = read(fd,buffer+index,1);
+                if((buffer[index] == FLAG_RCV) && bytesRead){
+                    index++;
+                    state = 2;
+                }
+                break;
+        
+        /*STATE 2 - READS 1 CHAR UNTIL RECEIVES DIFFERENT THAN FLAG_RCV*/
+        case 2: bytesRead  = read(fd,buffer+index,1);
+
+                if (((buffer[index])!= FLAG_RCV) && bytesRead){
+                    index++;
+                    state = 3;
+                }			
+                break;
+
+        /*STATE 3 - READS 1 CHAR OF DATA UNTIL RECEIVES A FLAG_RCV*/
+        case 3: bytesRead  = read(fd,buffer+index,1);
+                if((buffer[index]) == FLAG_RCV){
+                    //length = index + 1;
+                    index++;
+                    state = 4;
+                } else index++;
+                break;
+
+        /*STATE 4 - SUCESSFULLY READ BUFFER! RETURN LENGTH OF BUFFER*/
+        case 4: 
+                printf("Frame received!\n");
+                return index;
+                /*i=0; 			
+                state = 5;
+                break;*/
+    }
+
+    if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+
 		//printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
-	}
-	return length;
+	//}
+    //return length;
+    
+    return readpacket(fd, buffer, mode,state, index);
 	
 	
 }
@@ -147,7 +162,8 @@ int llopen(int fd, unsigned char mode){ //funciona
 	unsigned char msg[5];
 	unsigned char buff[5];
 	int error;
-	int res;
+    int res;
+    int bytesRead;
 
 	msg[0] = FLAG_RCV;
 	msg[1] = A;
@@ -170,7 +186,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                 res = write(fd,msg,5);
                 //printf("%d bytes sent\n",res);
                 
-                readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
+                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
                 
             }
@@ -178,7 +194,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 
 		case RECEIVER: //OK
             while(1){ //Espera pela trama SET
-                readpacket(fd,buff,RECEIVER);
+                bytesRead = readpacket(fd,buff,RECEIVER,1,0);
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
                 if (error) {
                     //printf("Received an invalid frame\n");
@@ -257,7 +273,7 @@ int llread(int fd,unsigned char *buffer){
 		//printf("STATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
-                length = readpacket(fd, buff, RECEIVER);
+                length = readpacket(fd, buff, RECEIVER,1,0);
                 state=2;
 
 				//Geração de erros_____________________________________________
@@ -412,6 +428,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
     int frameSize = 0;
     int error = 1;
     int bytesWritten = 0;
+    int bytesRead;
     int i = 0;
     unsigned char ack[ll->max_size];
     
@@ -451,7 +468,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
         alarm(ll->timeout); //activa alarme de 3s
         alarmFlag=0;
         
-        readpacket(fd, ack, TRANSMITTER); //Espera pela resposta RR ou REJ
+        bytesRead = readpacket(fd, ack, TRANSMITTER,1,0); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
             printf("*** ACK é inválido ***\n");
@@ -502,6 +519,7 @@ int llclose(int fd, unsigned char mode){
     unsigned char buff[5];
     int error,i;
     int res;
+    int bytesRead;
     
     //printf("*** Trying to close the connection. ***\n");
     switch(mode){
@@ -519,7 +537,7 @@ int llclose(int fd, unsigned char mode){
                 //printf("%d bytes sent\n",res);
                // printf("DISC sent\n");
                 
-                readpacket(fd,buff,TRANSMITTER); //Espera pela resposta DISC
+                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta DISC
                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
             }
             alarm(0);
@@ -534,7 +552,7 @@ int llclose(int fd, unsigned char mode){
                 DISC[3] = DISC[1]^DISC[2];
                 alarm(0);
                 alarmFlag=0;
-                readpacket(fd,buff,RECEIVER); //esperamos por DISC
+                bytesRead = readpacket(fd,buff,RECEIVER,1,0); //esperamos por DISC
                 if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
                     printf("Received a frame but it isn't DISC, still waiting for DISC\n");
                     continue;
@@ -558,7 +576,7 @@ int llclose(int fd, unsigned char mode){
 						buff[i] = 0;
 					}
                     
-                    readpacket(fd,buff,TRANSMITTER); //Espera pela resposta UA
+                    bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
 					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
 					//if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
                     if(!error) break;
