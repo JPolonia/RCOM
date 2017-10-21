@@ -103,7 +103,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
 
     int bytesRead;
     
-    if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+    //if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
     //while(state != 5){
 
     if(alarmFlag && (mode==TRANSMITTER) ){ 		
@@ -146,7 +146,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
                 break;*/
     }
 
-    if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+    //if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
 
 		//printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
 	//}
