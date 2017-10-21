@@ -96,15 +96,9 @@ int initTermios(int fd){
 
 int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int index){ //Funciona
 
-	/*int res = 0;
-	int state = 1;
-	int i = 0;
-    int length = 0;*/
-
     int bytesRead;
     
     //if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
-    //while(state != 5){
 
     if(alarmFlag && (mode==TRANSMITTER) ){ 		
         return -1;;
@@ -121,7 +115,6 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
         
         /*STATE 2 - READS 1 CHAR UNTIL RECEIVES DIFFERENT THAN FLAG_RCV*/
         case 2: bytesRead  = read(fd,buffer+index,1);
-
                 if (((buffer[index])!= FLAG_RCV) && bytesRead){
                     index++;
                     state = 3;
@@ -141,17 +134,10 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
         case 4: 
                 printf("Frame received!\n");
                 return index;
-                /*i=0; 			
-                state = 5;
-                break;*/
     }
 
     //if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
-
-		//printf("STATE %d   - buffer[%d] = 0x%02x - res = %d\n", state, i, buffer[i],res);
-	//}
-    //return length;
-    
+   
     return readpacket(fd, buffer, mode,state, index);
 	
 	
@@ -162,7 +148,7 @@ int llopen(int fd, unsigned char mode){ //funciona
 	unsigned char msg[5];
 	unsigned char buff[5];
 	int error;
-    int res;
+    int bytesWritten;
     int bytesRead;
 
 	msg[0] = FLAG_RCV;
@@ -183,7 +169,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                 alarmFlag=0;
 
                 /*Envia trama SET*/
-                res = write(fd,msg,5);
+                bytesWritten = write(fd,msg,5);
                 //printf("%d bytes sent\n",res);
                 
                 bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
@@ -203,7 +189,7 @@ int llopen(int fd, unsigned char mode){ //funciona
                 else {//Envia resposta UA
                     msg[2] = C_UA;
                     msg[3] = A^C_UA;
-                    res = write(fd,msg,5);
+                    bytesWritten = write(fd,msg,5);
                     //printf("%d bytes sent\n",res);
                     break;
                 }
@@ -221,8 +207,7 @@ int llopen(int fd, unsigned char mode){ //funciona
     }
     //printf("*** Successfully established a connection. ***\n");
     alarm(0); //cancela alarme anterior
-	return 1; 
-	
+	return 1;	
 }
 
 int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
