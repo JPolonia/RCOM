@@ -327,13 +327,25 @@ int llclose(int fd, unsigned char mode){
 }
 
 
-unsigned char xor_result(unsigned char *array, int tam){ 
+/*unsigned char xor_result(unsigned char *array, int tam){ 
 	unsigned char xor=array[0];
 	int i;
 
 	for(i=1; i<tam; i++)
         xor = xor ^ array[i];
         
+	return xor;
+}*/
+
+unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
+	unsigned char xor;
+	int i=2;
+
+	xor = array[0] ^ array[1];
+
+	for(i=2; i<tam; i++){
+		xor = xor ^ array[i];
+	}
 	return xor;
 }
 
@@ -458,8 +470,7 @@ int llread(int fd,unsigned char *buffer){
                         }
                         if(tt->debug)  printf("*** Received valid frame ***\n");
                         state = 5;
-                    }
-                    else { //dados invalidos, enviar REJ
+                    }else { //dados invalidos, enviar REJ
                         if(ll->sequenceNumber == 0){
                             REJ[2] = C_REJ_0;
                             REJ[3] = (REJ[1]^REJ[2]);
