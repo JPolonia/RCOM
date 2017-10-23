@@ -187,7 +187,7 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
                                 
                                 bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
                                 if(bytesRead != CMD_SIZE){
-                                    printf("Error Receiving SET mensage... bytesRead:%d Expected:%d \n",bytesRead,CMD_SIZE);
+                                    printf("Error Receiving UA mensage... bytesRead:%d Expected:%d \n",bytesRead,CMD_SIZE);
                                 }
                                 error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
                                 
@@ -229,7 +229,7 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
 		printf("*** Error establishing a connection: ***\n");
 		return -1;
     }
-    //printf("*** Successfully established a connection. ***\n");
+    printf("*** Successfully established a connection. ***\n");
     alarm(0); //cancela alarme anterior
 	return 1;	
 }
@@ -307,7 +307,7 @@ int llread(int fd,unsigned char *buffer){
                     break;
             case 3: //Verifica se a trama é uma trama SET!!
                     if(buff[2]==C_SET){
-                        printf("Erro o transmissor nao recebeu a trama UA");
+                        printf("Erro o transmissor nao recebeu a trama UA\n");
                         llopen(fd,RECEIVER,2);
                         state = 1;
                         break;
