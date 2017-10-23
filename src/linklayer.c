@@ -198,8 +198,9 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
                             while(1){ //Espera pela trama SET
                                 if(state==1){
                                     bytesRead = readpacket(fd,buff,RECEIVER,1,0);
-                                } 
-                                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+									error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+                                }else error = 0;
+                                
                                 if (error) {
                                     //printf("Received an invalid frame\n");
                                     continue;
@@ -207,8 +208,10 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
                                 else {//Envia resposta UA
                                     msg[2] = C_UA;
                                     msg[3] = A^C_UA;
+
+									//Test UA ERROR
                                     if(error_UA) error_UA = 0;
-									else bytesWritten = write(fd,msg,5); //Test UA ERROR
+									else bytesWritten = write(fd,msg,5); 
 										
                                     //printf("%d bytes sent\n",res);
                                     break;
@@ -307,7 +310,8 @@ int llread(int fd,unsigned char *buffer){
                     break;
             case 3: //Verifica se a trama é uma trama SET!!
                     if(buff[2]==C_SET){
-                        printf("Erro o transmissor nao recebeu a trama UA\n");
+                        printf("Erro recebeu um trama SET!\n");
+						printf("Voltando para o llopen...\n");
                         llopen(fd,RECEIVER,2);
                         state = 1;
                         break;
