@@ -307,7 +307,7 @@ int llread(int fd,unsigned char *buffer){
             case 3: //Verifica se a trama é uma trama SET!!
                     if(buff[2]==C_SET){
                         printf("Erro o transmissor nao recebeu a trama UA");
-                        llopen(fd,RECEIVER,2)
+                        llopen(fd,RECEIVER,2);
                         state = 1;
                         break;
                     }

@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 		gettimeofday(&timecheck,NULL);
 		start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
 
-        if(llopen(fd, TRANSMITTER) < 0 ){
+        if(llopen(fd, TRANSMITTER,1) < 0 ){
             printf("llopen() falhou\n");
             sleep(1);
             return 0;
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 		//Começar a contar tempo
 		start = time(NULL);
 
-        if(llopen(fd, RECEIVER) < 0){
+        if(llopen(fd, RECEIVER,1) < 0){
             printf("llopen() falhou\n");
             sleep(1);
             return 0;
