@@ -16,6 +16,8 @@
 #define HEADER_ERROR_RATE 0.1
 #define PACKET_ERROR_RATE 0.3
 
+#define CMD_SIZE 5
+
 const int T_PROP = 500; //em ms
 
 const int FLAG_RCV = 0x7E;
@@ -37,7 +39,7 @@ const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
-
+int debug;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
@@ -105,7 +107,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
     }
 
     switch(state){
-        /*STATE 1 - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
+        /*STATE 1: START - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
         case 1: bytesRead  = read(fd,buffer+index,1);
                 if((buffer[index] == FLAG_RCV) && bytesRead){
                     index++;
@@ -113,7 +115,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
                 }
                 break;
         
-        /*STATE 2 - READS 1 CHAR UNTIL RECEIVES DIFFERENT THAN FLAG_RCV*/
+        /*STATE 2: FLAG RCV - READS 1 CHAR UNTIL RECEIVES DIFFERENT THAN FLAG_RCV*/
         case 2: bytesRead  = read(fd,buffer+index,1);
                 if (((buffer[index])!= FLAG_RCV) && bytesRead){
                     index++;
@@ -143,67 +145,88 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
 	
 }
 
-int llopen(int fd, unsigned char mode){ //funciona
+int llopen(int fd, unsigned char mode, int state){ //funciona
 	
-	unsigned char msg[5];
-	unsigned char buff[5];
+	unsigned char *msg;
+    unsigned char *buff;
 	int error;
     int bytesWritten;
     int bytesRead;
+
+    msg = (unsigned char *) malloc(sizeof(unsigned char) * CMD_SIZE);
+    buff = (unsigned char *) malloc(sizeof(unsigned char) * CMD_SIZE);
+
+    bytesWritten = 0;
+    bytesRead = 0;
 
 	msg[0] = FLAG_RCV;
 	msg[1] = A;
 	msg[4] = FLAG_RCV;
 	
-	//printf("*** Trying to establish a connection. ***\n");
+	printf("*** Trying to establish a connection. ***\n");
 	switch(mode){
-		case TRANSMITTER: //OK
-            msg[2] = C_SET;
-            msg[3] = A^C_SET;
-            alarmCounter =    1;
-            error = 1;
-            while(alarmCounter <= ll->numTransmissions && error){
-                
-                alarm(0);
-                alarm(ll->timeout); //activa alarme de 3s
-                alarmFlag=0;
+		case TRANSMITTER:
+                            msg[2] = C_SET;
+                            msg[3] = A^C_SET;
+                            alarmCounter =    1;
+                            error = 1;
+                            while(alarmCounter <= ll->numTransmissions && error){
+                                
+                                alarm(0);
+                                alarm(ll->timeout); //activa alarme de 3s
+                                alarmFlag=0;
 
-                /*Envia trama SET*/
-                bytesWritten = write(fd,msg,5);
-                //printf("%d bytes sent\n",res);
-                
-                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
-                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
-                
-            }
-            break;
+                                /*Envia trama SET*/
+                                bytesWritten = write(fd,msg,CMD_SIZE);
+                                printf("%d bytes sent\n",bytesWritten);
+                                if(bytesWritten != CMD_SIZE){
+                                    printf("Error Sending SET mensage... bytesWritten:%d Expected:%d \n",bytesWritten,CMD_SIZE);
 
-		case RECEIVER: //OK
-            while(1){ //Espera pela trama SET
-                bytesRead = readpacket(fd,buff,RECEIVER,1,0);
-                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
-                if (error) {
-                    //printf("Received an invalid frame\n");
-                    continue;
-                }
-                else {//Envia resposta UA
-                    msg[2] = C_UA;
-                    msg[3] = A^C_UA;
-                    bytesWritten = write(fd,msg,5);
-                    //printf("%d bytes sent\n",res);
-                    break;
-                }
-            }
-            break;
+                                }
+                                
+                                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
+                                if(bytesRead != CMD_SIZE){
+                                    printf("Error Receiving SET mensage... bytesRead:%d Expected:%d \n",bytesRead,CMD_SIZE);
+                                }
+                                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_UA) ? 1 : 0;
+                                
+                            }
+                            break;
+
+		case RECEIVER:
+                            while(1){ //Espera pela trama SET
+                                if(state==1){
+                                    bytesRead = readpacket(fd,buff,RECEIVER,1,0);
+                                    state = 2;
+                                } 
+                                if (state == 2){
+                                    error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+                                    if (error) {
+                                        //printf("Received an invalid frame\n");
+                                        continue;
+                                    }
+                                    else {//Envia resposta UA
+                                        msg[2] = C_UA;
+                                        msg[3] = A^C_UA;
+                                        bytesWritten = write(fd,msg,5);
+                                        //printf("%d bytes sent\n",res);
+                                        break;
+                                    }
+                                    state = 1;
+                                }
+                            }
+                            break;
             
 		default:
-            return -1;
-	}
+                            return -1;
+    }
+    
+    free(msg);
+    free(buff);
 
 	if(error){
 		printf("*** Error establishing a connection: ***\n");
 		return -1;
-        
     }
     //printf("*** Successfully established a connection. ***\n");
     alarm(0); //cancela alarme anterior
@@ -258,53 +281,59 @@ int llread(int fd,unsigned char *buffer){
 		//printf("STATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
-                length = readpacket(fd, buff, RECEIVER,1,0);
-                state=2;
+                    length = readpacket(fd, buff, RECEIVER,1,0);
+                    state=2;
 
-				//Geração de erros_____________________________________________
-				if(tt->active){
-					insertHeaderError(buff, length, tt->headerErrorRate);
-					insertPacketError(buff, length, tt->packetErrorRate);
+                    //Geração de erros_____________________________________________
+                    if(tt->active){
+                        insertHeaderError(buff, length, tt->headerErrorRate);
+                        insertPacketError(buff, length, tt->packetErrorRate);
 
-					usleep(T_PROP * 1000);
-				}
-				//_____________________________________________________________
+                        usleep(T_PROP * 1000);
+                    }
+                    //_____________________________________________________________
 
-                /*for(i=0;i< + 6;i++){
-                    printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
-                }*/
-                break;
+                    /*for(i=0;i< + 6;i++){
+                        printf("buff[%d] = 0x%02x %c \n",i,buff[i],buff[i]);
+                    }*/
+                    break;
 		
 			case 2:  //verifica se tem erro no cabeçalho
-                if(buff[3]==(buff[1]^buff[2]))
-                    state=3;
-                else
-                    state=1;
-                break;
-
-			case 3:  //verifica se trama é repetida
-                if( buff[2]==C_I_0 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
-                    RR[2] = C_RR_1; //queremos seq 1
-                    RR[3] = RR[1]^RR[2];
-                    if(write(fd, RR, 5) != 5){
-                        //printf("Falha no envio de RR\n");
+                    if(buff[3]==(buff[1]^buff[2]))
+                        state=3;
+                    else
+                        state=1;
+                    break;
+            case 3: //Verifica se a trama é uma trama SET!!
+                    if(buff[2]==C_SET){
+                        printf("Erro o transmissor nao recebeu a trama UA");
+                        llopen(fd,RECEIVER,2)
+                        state = 1;
+                        break;
                     }
-                    //printf("Trama repetida, RR envidado\n");
-                    state=1;
-                }
-                else if(buff[2]==C_I_1 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
-                    RR[2] = C_RR_0; //queremos seq 0
-                    RR[3] = RR[1]^RR[2];
-                    if(write(fd, RR, 5) != 5){
-                        //printf("Falha no envio de RR\n");
+                    //verifica se trama é repetida
+                    if( buff[2]==C_I_0 && ll->sequenceNumber==1 ){ //recebemos 0 e queriamos 1
+                        RR[2] = C_RR_1; //queremos seq 1
+                        RR[3] = RR[1]^RR[2];
+                        if(write(fd, RR, 5) != 5){
+                            //printf("Falha no envio de RR\n");
+                        }
+                        //printf("Trama repetida, RR envidado\n");
+                        state=1;
                     }
-                    //printf("Trama repetida, RR envidado\n");
-                    state=1;
-                }
-                else{ //recebemos o que queriamos
-                    state=4;
-                }
-                break;
+                    else if(buff[2]==C_I_1 && ll->sequenceNumber==0){ //recebemos os 1 e queriamos 0
+                        RR[2] = C_RR_0; //queremos seq 0
+                        RR[3] = RR[1]^RR[2];
+                        if(write(fd, RR, 5) != 5){
+                            //printf("Falha no envio de RR\n");
+                        }
+                        //printf("Trama repetida, RR envidado\n");
+                        state=1;
+                    }
+                    else{ //recebemos o que queriamos
+                        state=4;
+                    }
+                    break;
 								
 			case 4: //faz destuffing e verifica BCC2
                 tam = destuffing(buff, buff_destuff); //tam = dados+BCC2

@@ -39,7 +39,7 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
 //mode = TRANSMITTER ou RECEIVER
 
 
-int llopen(int fd, unsigned char mode); //OK
+int llopen(int fd, unsigned char mode,int state); //OK
 //retorna 1 em caso de sucesso, -1 em caso de erro
 //mode = TRANSMITTER ou RECEIVER
 //se mode == RECEIVER bloqueia até establecer ligação
