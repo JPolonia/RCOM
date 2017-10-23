@@ -132,7 +132,7 @@ int readFrame(int fd, unsigned char *buffer, unsigned char mode, int state, int 
 
         /*STATE 4 - SUCESSFULLY READ BUFFER! RETURN LENGTH OF BUFFER*/
         case 4: 
-                printf("Frame received!\n");
+                //printf("Frame received!\n");
                 return index;
     }
 
@@ -207,7 +207,7 @@ int llopen(int fd, unsigned char mode, int state){
                                     if(error_UA) error_UA = 0;
 									else bytesWritten = write(fd,msg,5); 
 										
-                                    //printf("%d bytes sent\n",res);
+                                    printf("Receiver UA: %d bytes sent\n",bytesWritten);
                                     break;
                                 }
                                 state = 1;
