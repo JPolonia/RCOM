@@ -40,6 +40,7 @@ const int C_DISC = 0x0b;
 linkLayer* ll;
 
 int debug;
+int error_UA = 1;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
@@ -197,23 +198,23 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
                             while(1){ //Espera pela trama SET
                                 if(state==1){
                                     bytesRead = readpacket(fd,buff,RECEIVER,1,0);
-                                    state = 2;
                                 } 
-                                if (state == 2){
-                                    error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
-                                    if (error) {
-                                        //printf("Received an invalid frame\n");
-                                        continue;
-                                    }
-                                    else {//Envia resposta UA
-                                        msg[2] = C_UA;
-                                        msg[3] = A^C_UA;
-                                        bytesWritten = write(fd,msg,5);
-                                        //printf("%d bytes sent\n",res);
-                                        break;
-                                    }
-                                    state = 1;
+                                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
+                                if (error) {
+                                    //printf("Received an invalid frame\n");
+                                    continue;
                                 }
+                                else {//Envia resposta UA
+                                    msg[2] = C_UA;
+                                    msg[3] = A^C_UA;
+                                    if(error_UA) error_UA = 0;
+									else bytesWritten = write(fd,msg,5); //Test UA ERROR
+										
+                                    //printf("%d bytes sent\n",res);
+                                    break;
+                                }
+                                state = 1;
+                                
                             }
                             break;
             
