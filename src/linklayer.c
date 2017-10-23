@@ -245,77 +245,77 @@ int llclose(int fd, unsigned char mode){
     printf("*** Trying to close the connection. ***\n");
     switch(mode){
         case TRANSMITTER:
-            alarmCounter = 1;
-            error = 1;
-            while(alarmCounter <= ll->numTransmissions && error){
-                
-                alarm(0);
-                alarm(ll->timeout); //activa alarme de 3s
-                alarmFlag=0;
-                
-                //Envia trama DISC
-                res = write(fd,DISC,5);
-                if(tt->debug) printf("%d bytes sent\n",res);
-                if(tt->debug) printf("DISC sent\n");
-                
-                bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta DISC
-                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
-            }
-            alarm(0);
-            res = write(fd, UA, 5);
-            if(tt->debug) printf("%d bytes sent\n",res);
-            if(tt->debug) printf("UA sent\n");
-            break;
+                            alarmCounter = 1;
+                            error = 1;
+                            while(alarmCounter <= ll->numTransmissions && error){
+                                
+                                alarm(0);
+                                alarm(ll->timeout); //activa alarme de 3s
+                                alarmFlag=0;
+                                
+                                //Envia trama DISC
+                                res = write(fd,DISC,5);
+                                if(tt->debug) printf("%d bytes sent\n",res);
+                                if(tt->debug) printf("DISC sent\n");
+                                
+                                bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta DISC
+                                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
+                            }
+                            alarm(0);
+                            res = write(fd, UA, 5);
+                            if(tt->debug) printf("%d bytes sent\n",res);
+                            if(tt->debug) printf("UA sent\n");
+                            break;
             
         case RECEIVER:
-            while(1){ //Espera pela trama DISC
-                DISC[1] = 0x01; //comando enviado pelo recetor
-                DISC[3] = DISC[1]^DISC[2];
-                alarm(0);
-                alarmFlag=0;
-                bytesRead = readFrame(fd,buff,RECEIVER,1,0); //esperamos por DISC
-                if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
-                    printf("Received a frame but it isn't DISC, still waiting for DISC\n");
-                    continue;
-                }
-                if(tt->debug) printf("DISC received\n");
-                
-                error = 1;
-                alarmCounter = 1;
-                while(alarmCounter <= ll->numTransmissions){ //transmissão de DISC
+                            while(1){ //Espera pela trama DISC
+                                DISC[1] = 0x01; //comando enviado pelo recetor
+                                DISC[3] = DISC[1]^DISC[2];
+                                alarm(0);
+                                alarmFlag=0;
+                                bytesRead = readFrame(fd,buff,RECEIVER,1,0); //esperamos por DISC
+                                if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
+                                    printf("Received a frame but it isn't DISC, still waiting for DISC\n");
+                                    continue;
+                                }
+                                if(tt->debug) printf("DISC received\n");
+                                
+                                error = 1;
+                                alarmCounter = 1;
+                                while(alarmCounter <= ll->numTransmissions){ //transmissão de DISC
+                                    
+                                    alarm(0);
+                                    alarm(ll->timeout); //activa alarme de 3s
+                                    alarmFlag=0;
+                                    
+                                    //Envia trama DISC
+                                    res = write(fd, DISC, 5);
+                                    if(tt->debug)  printf("%d bytes sent\n",res);
+                                    if(tt->debug)  printf("DISC sent\n");
+                                    
+                                    for(i=0;i<5;i++){
+                                        buff[i] = 0;
+                                    }
+                                    
+                                    bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
+                                    error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
+                                    if(error) printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                                    if(!error) break;
+                                }
+                                if(!error){
+                                    if(tt->debug) printf("Received UA\n");
+                                    break;
+                                }
+                                else{
+                                    printf("Couldn't receive UA\n");	
+                                    return -1;
+                                }
                     
-                    alarm(0);
-                    alarm(ll->timeout); //activa alarme de 3s
-                    alarmFlag=0;
-                    
-                    //Envia trama DISC
-                    res = write(fd, DISC, 5);
-                    if(tt->debug)  printf("%d bytes sent\n",res);
-					if(tt->debug)  printf("DISC sent\n");
-					
-					for(i=0;i<5;i++){
-						buff[i] = 0;
-					}
-                    
-                    bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
-					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-					if(error) printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
-                    if(!error) break;
-                }
-                if(!error){
-                    if(tt->debug) printf("Received UA\n");
-                    break;
-                }
-                else{
-					printf("Couldn't receive UA\n");	
-                    return -1;
-                }
-    
-                
-            }
-            break;
+                                
+                            }
+                            break;
         default:
-            return -1;
+                            return -1;
     }
     free(buff);
 	sleep(1);
@@ -466,10 +466,7 @@ int llread(int fd,unsigned char *buffer){
                             if(write(fd, REJ, 5) != 5){
                                 printf("Falha ao enviar REJ\n");
                             }
-                            if(tt->debug) {
-                                printf("REJ0 enviado\n");
-                                for(i = 0;i < 5;i++) printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
-                            }
+                            printf("REJ0 enviado\n");
                         }
                         else if(ll->sequenceNumber == 1){
                             REJ[2] = C_REJ_1;
@@ -477,10 +474,7 @@ int llread(int fd,unsigned char *buffer){
                             if(write(fd, REJ, 5) != 5){
                                 printf("Falha ao enviar REJ\n");
                             }
-                            if(tt->debug){
-                                printf("REJ1 enviado\n");
-                                for(i = 0;i < 5;i++) printf("REJ[%d] = 0x%02x\n", i, REJ[i]);
-                            }
+                            printf("REJ1 enviado\n"); 
                         }
                         state = 1;
                     }
@@ -591,11 +585,11 @@ int llwrite(int fd, unsigned char *buffer , int length){
                 alarm(0); //cancela alarme anterior
                 break;
             }else if((ack[2] == C_REJ_0) || (ack[2] == C_REJ_1)){  //Recebemos REJ
-                if(tt->debug) printf("*** REJ received ***\n");
+                printf("*** REJ received ***\n");
                 alarmCounter = 1; //começamos transmissão de novo?
             }else{ //ack inválido
                 printf("*** ACK é inválido ***\n");
-                for(i = 0;i < 5;i++) printf("ACK[%d] = 0x%02x\n", i, ack[i]);
+                for(i=0;i < 5;i++) printf("ACK[%d] = 0x%02x\n", i, ack[i]);
                 error = 1;
             }
         }
