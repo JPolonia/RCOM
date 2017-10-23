@@ -40,7 +40,7 @@ const int C_DISC = 0x0b;
 linkLayer* ll;
 
 int debug = 0;
-int error_UA = 1;
+int error_UA = 0;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
@@ -197,10 +197,9 @@ int llopen(int fd, unsigned char mode, int state){
                                 }else error = 0;
                                 
                                 if (error) {
-                                    //printf("Received an invalid frame\n");
+                                    printf("Received an invalid frame\n");
                                     continue;
-                                }
-                                else {//Envia resposta UA
+                                }else {//Envia resposta UA
                                     msg[2] = C_UA;
                                     msg[3] = A^C_UA;
 
@@ -240,7 +239,7 @@ int llclose(int fd, unsigned char mode){
     int res;
     int bytesRead;
     
-    //printf("*** Trying to close the connection. ***\n");
+    printf("*** Trying to close the connection. ***\n");
     switch(mode){
         case TRANSMITTER:
             alarmCounter = 1;
@@ -319,7 +318,7 @@ int llclose(int fd, unsigned char mode){
 	sleep(1);
     closeSerialPort(fd); //fazemos isto aqui?
 	sleep(1);
-    //printf("*** Successfully closed the connection. ***\n");
+    printf("*** Successfully closed the connection. ***\n");
     alarm(0); //cancela alarme anterior
     return 1;
 }
