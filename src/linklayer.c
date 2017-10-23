@@ -39,7 +39,7 @@ const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
-int debug;
+int debug = 0;
 int error_UA = 1;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
@@ -96,16 +96,14 @@ int initTermios(int fd){
 }
 
 
-
-int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int index){ //Funciona
+/*READS FRAME UNTIL FLAG_RCV AND RETURN SIZE OF BUFFER*/
+int readFrame(int fd, unsigned char *buffer, unsigned char mode, int state, int index){ 
 
     int bytesRead;
     
-    //if(!index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+    if(debug && !index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
 
-    if(alarmFlag && (mode==TRANSMITTER) ){ 		
-        return -1;;
-    }
+    if(alarmFlag && (mode==TRANSMITTER))  return -1;
 
     switch(state){
         /*STATE 1: START - READS 1 CHAR UNTIL RECEIVES FLAG_RCV*/
@@ -127,7 +125,6 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
         /*STATE 3 - READS 1 CHAR OF DATA UNTIL RECEIVES A FLAG_RCV*/
         case 3: bytesRead  = read(fd,buffer+index,1);
                 if((buffer[index]) == FLAG_RCV){
-                    //length = index + 1;
                     index++;
                     state = 4;
                 } else index++;
@@ -139,14 +136,12 @@ int readpacket(int fd, unsigned char *buffer, unsigned char mode, int state, int
                 return index;
     }
 
-    //if(index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
-   
-    return readpacket(fd, buffer, mode,state, index);
-	
-	
+    if(debug && index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+    
+    return readFrame(fd, buffer, mode,state, index);
 }
 
-int llopen(int fd, unsigned char mode, int state){ //funciona
+int llopen(int fd, unsigned char mode, int state){ 
 	
 	unsigned char *msg;
     unsigned char *buff;
@@ -185,7 +180,7 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
 
                                 }
                                 
-                                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
+                                bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
                                 if(bytesRead != CMD_SIZE){
                                     printf("Error Receiving UA mensage... bytesRead:%d Expected:%d \n",bytesRead,CMD_SIZE);
                                 }
@@ -197,7 +192,7 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
 		case RECEIVER:
                             while(1){ //Espera pela trama SET
                                 if(state==1){
-                                    bytesRead = readpacket(fd,buff,RECEIVER,1,0);
+                                    bytesRead = readFrame(fd,buff,RECEIVER,1,0);
 									error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
                                 }else error = 0;
                                 
@@ -237,6 +232,115 @@ int llopen(int fd, unsigned char mode, int state){ //funciona
 	return 1;	
 }
 
+int llclose(int fd, unsigned char mode){
+    unsigned char DISC[] = {FLAG_RCV, A, C_DISC, A^C_DISC,FLAG_RCV};
+    unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_UA,FLAG_RCV}; //A = 0x01
+    unsigned char buff[5];
+    int error,i;
+    int res;
+    int bytesRead;
+    
+    //printf("*** Trying to close the connection. ***\n");
+    switch(mode){
+        case TRANSMITTER:
+            alarmCounter = 1;
+            error = 1;
+            while(alarmCounter <= ll->numTransmissions && error){
+                
+                alarm(0);
+                alarm(ll->timeout); //activa alarme de 3s
+                alarmFlag=0;
+                
+                //Envia trama DISC
+                res = write(fd,DISC,5);
+                //printf("%d bytes sent\n",res);
+               // printf("DISC sent\n");
+                
+                bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta DISC
+                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
+            }
+            alarm(0);
+            res = write(fd, UA, 5);
+           // printf("%d bytes sent\n",res);
+            //printf("UA sent\n");
+            break;
+            
+        case RECEIVER:
+            while(1){ //Espera pela trama DISC
+                DISC[1] = 0x01; //comando enviado pelo recetor
+                DISC[3] = DISC[1]^DISC[2];
+                alarm(0);
+                alarmFlag=0;
+                bytesRead = readFrame(fd,buff,RECEIVER,1,0); //esperamos por DISC
+                if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
+                    printf("Received a frame but it isn't DISC, still waiting for DISC\n");
+                    continue;
+                }
+                //printf("DISC received\n");
+                
+                error = 1;
+                alarmCounter = 1;
+                while(alarmCounter <= ll->numTransmissions){ //transmissão de DISC
+                    
+                    alarm(0);
+                    alarm(ll->timeout); //activa alarme de 3s
+                    alarmFlag=0;
+                    
+                    //Envia trama DISC
+                    res = write(fd, DISC, 5);
+                    //printf("%d bytes sent\n",res);
+					//printf("DISC sent\n");
+					
+					for(i=0;i<5;i++){
+						buff[i] = 0;
+					}
+                    
+                    bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
+					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
+					//if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
+                    if(!error) break;
+                }
+                if(!error){
+                    //printf("Received UA\n");
+                    break;
+                }
+                else{
+					//printf("Couldn't receive UA\n");
+					
+                    return -1;
+                }
+    
+                
+            }
+            break;
+        default:
+            return -1;
+    }
+	sleep(1);
+    closeSerialPort(fd); //fazemos isto aqui?
+	sleep(1);
+    //printf("*** Successfully closed the connection. ***\n");
+    alarm(0); //cancela alarme anterior
+    return 1;
+}
+
+
+unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
+	unsigned char xor;
+	int i=2;
+
+	xor = array[0] ^ array[1];
+
+	for(i=2; i<tam; i++){
+		xor = xor ^ array[i];
+	}
+	return xor;
+}
+
+/*---------------------------------------------------------------------------------*/
+/*---------------------------------RECEIVER----------------------------------------*/
+/*---------------------------------------------------------------------------------*/
+
 int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
 	int i=4, j=0;
 
@@ -260,19 +364,6 @@ int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
 	return j; 
 }
 
-unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
-	unsigned char xor;
-	int i=2;
-
-	xor = array[0] ^ array[1];
-
-	for(i=2; i<tam; i++){
-		xor = xor ^ array[i];
-	}
-	return xor;
-}
-
-
 int llread(int fd,unsigned char *buffer){
 
 	unsigned char buff[ll->max_size]; //para receber trama inteira
@@ -285,7 +376,7 @@ int llread(int fd,unsigned char *buffer){
 		//printf("STATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
-                    length = readpacket(fd, buff, RECEIVER,1,0);
+                    length = readFrame(fd, buff, RECEIVER,1,0);
                     state=2;
 
                     //Geração de erros_____________________________________________
@@ -403,6 +494,10 @@ int llread(int fd,unsigned char *buffer){
 	return tam-1;
 }
 
+/*---------------------------------------------------------------------------------*/
+/*--------------------------------TRANSMITTER--------------------------------------*/
+/*---------------------------------------------------------------------------------*/
+
 int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
 	int i = 0, j = 0;
 
@@ -487,7 +582,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
         alarm(ll->timeout); //activa alarme de 3s
         alarmFlag=0;
         
-        bytesRead = readpacket(fd, ack, TRANSMITTER,1,0); //Espera pela resposta RR ou REJ
+        bytesRead = readFrame(fd, ack, TRANSMITTER,1,0); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
             printf("*** ACK é inválido ***\n");
@@ -530,96 +625,4 @@ int llwrite(int fd, unsigned char *buffer , int length){
     }
     
 	return frameSize;
-}
-
-int llclose(int fd, unsigned char mode){
-    unsigned char DISC[] = {FLAG_RCV, A, C_DISC, A^C_DISC,FLAG_RCV};
-    unsigned char UA[] = {FLAG_RCV, 0x01, C_UA, 0x01^C_UA,FLAG_RCV}; //A = 0x01
-    unsigned char buff[5];
-    int error,i;
-    int res;
-    int bytesRead;
-    
-    //printf("*** Trying to close the connection. ***\n");
-    switch(mode){
-        case TRANSMITTER:
-            alarmCounter = 1;
-            error = 1;
-            while(alarmCounter <= ll->numTransmissions && error){
-                
-                alarm(0);
-                alarm(ll->timeout); //activa alarme de 3s
-                alarmFlag=0;
-                
-                //Envia trama DISC
-                res = write(fd,DISC,5);
-                //printf("%d bytes sent\n",res);
-               // printf("DISC sent\n");
-                
-                bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta DISC
-                error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_DISC) ? 1 : 0;
-            }
-            alarm(0);
-            res = write(fd, UA, 5);
-           // printf("%d bytes sent\n",res);
-            //printf("UA sent\n");
-            break;
-            
-        case RECEIVER:
-            while(1){ //Espera pela trama DISC
-                DISC[1] = 0x01; //comando enviado pelo recetor
-                DISC[3] = DISC[1]^DISC[2];
-                alarm(0);
-                alarmFlag=0;
-                bytesRead = readpacket(fd,buff,RECEIVER,1,0); //esperamos por DISC
-                if ((buff[3]!=(buff[1]^buff[2])) || (buff[2]!=C_DISC)) {
-                    printf("Received a frame but it isn't DISC, still waiting for DISC\n");
-                    continue;
-                }
-                //printf("DISC received\n");
-                
-                error = 1;
-                alarmCounter = 1;
-                while(alarmCounter <= ll->numTransmissions){ //transmissão de DISC
-                    
-                    alarm(0);
-                    alarm(ll->timeout); //activa alarme de 3s
-                    alarmFlag=0;
-                    
-                    //Envia trama DISC
-                    res = write(fd, DISC, 5);
-                    //printf("%d bytes sent\n",res);
-					//printf("DISC sent\n");
-					
-					for(i=0;i<5;i++){
-						buff[i] = 0;
-					}
-                    
-                    bytesRead = readpacket(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
-					error = ((buff[3]!=(buff[1]^buff[2])) || buff[2]!=C_UA) ? 1 : 0;
-					//if(error)printf("PAROU!! buff[0]=0x%02x buff[1]=0x%02x  buff[2]=0x%02x  buff[3]=0x%02x  buff[4]=0x%02x\n",buff[0],buff[1],buff[2],buff[3],buff[4]);
-                    if(!error) break;
-                }
-                if(!error){
-                    //printf("Received UA\n");
-                    break;
-                }
-                else{
-					//printf("Couldn't receive UA\n");
-					
-                    return -1;
-                }
-    
-                
-            }
-            break;
-        default:
-            return -1;
-    }
-	sleep(1);
-    closeSerialPort(fd); //fazemos isto aqui?
-	sleep(1);
-    //printf("*** Successfully closed the connection. ***\n");
-    alarm(0); //cancela alarme anterior
-    return 1;
 }
