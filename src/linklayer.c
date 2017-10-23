@@ -327,25 +327,13 @@ int llclose(int fd, unsigned char mode){
 }
 
 
-/*unsigned char xor_result(unsigned char *array, int tam){ 
+unsigned char xor_result(unsigned char *array, int tam){ 
 	unsigned char xor=array[0];
 	int i;
 
 	for(i=1; i<tam; i++)
         xor = xor ^ array[i];
         
-	return xor;
-}*/
-
-unsigned char xor_result(unsigned char *array, int tam){ //funciona!!
-	unsigned char xor;
-	int i=2;
-
-	xor = array[0] ^ array[1];
-
-	for(i=2; i<tam; i++){
-		xor = xor ^ array[i];
-	}
 	return xor;
 }
 
@@ -501,9 +489,9 @@ int llread(int fd,unsigned char *buffer){
 /*--------------------------------TRANSMITTER--------------------------------------*/
 /*---------------------------------------------------------------------------------*/
 
-int stuffing(unsigned char *data,unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
+/*int stuffing(unsigned char *data,unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
     int i = 0, j = 0;
-    /*Stuff Data*/
+    //Stuff Data
     for(i=0;i<length;i++){
         switch(data[i]){
             case 0x7E:      stuffedBuffer[j++] = ESCAPE;
@@ -516,7 +504,7 @@ int stuffing(unsigned char *data,unsigned char BCC2, unsigned char *stuffedBuffe
                             break;
         }
     }
-    /*Stuff BCC2*/
+    //Stuff BCC2
     switch(BCC2){
         case 0x7E:      stuffedBuffer[j++] = ESCAPE;
                         stuffedBuffer[j++]	= ESCAPE1;
@@ -526,6 +514,43 @@ int stuffing(unsigned char *data,unsigned char BCC2, unsigned char *stuffedBuffe
                         break;
         default:        stuffedBuffer[j++] = data[i]; 
                         break;
+    }
+	return j;	 
+}*/
+
+
+int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
+	int i = 0, j = 0;
+
+	for(i=0;i<length;i++){ //OK
+		if(buff[i] == FLAG_RCV){ //OK
+			stuffedBuffer[j] = ESCAPE;
+			stuffedBuffer[j+1]	= ESCAPE1;
+			j = j + 2;
+		}
+		else if(buff[i] == ESCAPE){ //OK
+			stuffedBuffer[j] = ESCAPE;
+			stuffedBuffer[j+1]	= ESCAPE2;
+			j = j + 2;
+		}
+		else{ //OK
+			stuffedBuffer[j] = buff[i]; 
+			j++;
+		}		
+	}
+    if(BCC2 == FLAG_RCV){
+        stuffedBuffer[j] = ESCAPE;
+        stuffedBuffer[j+1]    = ESCAPE1;
+        j = j + 2;
+    }
+    else if(BCC2 == ESCAPE){
+        stuffedBuffer[j] = ESCAPE;
+        stuffedBuffer[j+1]    = ESCAPE2;
+        j = j + 2;
+    }
+    else{
+        stuffedBuffer[j] = BCC2;
+        j++;
     }
 	return j;	 
 }
