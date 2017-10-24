@@ -102,7 +102,7 @@ int readFrame(int fd, unsigned char *buffer, unsigned char mode, int state, int 
 
     int bytesRead=0;
     
-    if(tt->debug && !index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
+    //if(tt->debug && !index) printf("STATE 1 - WAITING FOR FLAG_RCV\n");
 
     if(alarmFlag && (mode==TRANSMITTER))  return -1;
 
@@ -137,7 +137,7 @@ int readFrame(int fd, unsigned char *buffer, unsigned char mode, int state, int 
                 return index;
     }
 
-    if(tt->debug && index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
+    //if(tt->debug && index)printf("STATE %d   - buffer[%d] - 0x%02x ASCII: %c   bytesRead: %d\n",state,index,buffer[index-1],buffer[index-1],bytesRead);
     
     return readFrame(fd, buffer, mode,state, index);
 }
