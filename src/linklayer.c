@@ -597,7 +597,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
         readFrame(fd, ack, TRANSMITTER,1,0); //Espera pela resposta RR ou REJ
         
         if(ack[3]!=(ack[1]^ack[2])) {    //ack inválido
-            printf("\n*** ACK é inválido ***\n");
+            if(tt->debug) printf("\n*** ACK é inválido ***\n");
             //for(i = 0;i < 5;i++) printf("ACK[%d] = 0x%02x\n", i, ack[i]);
             continue;
         }else{    //ack válido
@@ -617,7 +617,7 @@ int llwrite(int fd, unsigned char *buffer , int length){
                 if(tt->debug) printf("\n*** REJ received ***\n");
                 alarmCounter = 1; //começamos transmissão de novo?
             }else{ //ack inválido
-                printf("\n*** ACK é inválido ***\n");
+                if(tt->debug) printf("\n*** ACK é inválido ***\n");
                 //for(i=0;i < 5;i++) printf("\nACK[%d] = 0x%02x\n", i, ack[i]);
                 error = 1;
             }
