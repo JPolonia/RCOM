@@ -372,7 +372,7 @@ int llread(int fd,unsigned char *buffer){
 	int tam = 1, state=1, i = 0, length = 0;
 
 	while(state!=5){
-		if(tt->debug)  printf("\nSTATE %d - llread\n",state);
+		//  printf("\nSTATE %d - llread\n",state);
 		switch(state){
 			case 1:  //recebe trama
                     length = readFrame(fd, buff, RECEIVER,1,0);
