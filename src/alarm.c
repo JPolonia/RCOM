@@ -6,7 +6,7 @@
 int alarmFlag=1, alarmCounter=1;
 
 void alarmHandler(){//atende alarme
-	printf("ALARME # %d\n", alarmCounter);
+	printf("\nALARME # %d\n", alarmCounter);
 	alarmFlag=1;
 	alarmCounter++;
 }
