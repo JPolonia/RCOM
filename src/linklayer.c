@@ -40,7 +40,7 @@ const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
-int error_UA = 0;
+int error_UA = 1;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
@@ -183,7 +183,14 @@ int llopen(int fd, unsigned char mode, int state){
 
                                 }
                                 
-                                bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA
+                                //Test ERROR UA
+                                if(!error_UA)
+                                    bytesRead = readFrame(fd,buff,TRANSMITTER,1,0); //Espera pela resposta UA~
+                                else{
+                                    bytesRead = 0;
+                                    error_UA--;
+                                }
+
                                 if(bytesRead != CMD_SIZE){
                                     printf("Error Receiving UA mensage... bytesRead:%d Expected:%d \n",bytesRead,CMD_SIZE);
                                 }
@@ -205,9 +212,8 @@ int llopen(int fd, unsigned char mode, int state){
                                     msg[2] = C_UA;
                                     msg[3] = A^C_UA;
 
-									//Test UA ERROR
-                                    if(error_UA) error_UA = 0;
-									else bytesWritten = write(fd,msg,5); 
+									//Sends UA frame
+									bytesWritten = write(fd,msg,5); 
 										
                                     if(tt->debug) printf("Receiver UA: %d bytes sent\n",bytesWritten);
                                     sentUA = 1;
