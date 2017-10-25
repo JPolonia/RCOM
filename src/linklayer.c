@@ -149,12 +149,14 @@ int llopen(int fd, unsigned char mode, int state){
 	int error;
     int bytesWritten;
     int bytesRead;
+    int sentUA;
 
     msg = (unsigned char *) malloc(sizeof(unsigned char) * CMD_SIZE);
     buff = (unsigned char *) malloc(sizeof(unsigned char) * CMD_SIZE);
 
     bytesWritten = 0;
     bytesRead = 0;
+    sentUA = 0;
 
 	msg[0] = FLAG_RCV;
 	msg[1] = A;
@@ -191,7 +193,7 @@ int llopen(int fd, unsigned char mode, int state){
                             break;
 
 		case RECEIVER:
-                            while(1){ //Espera pela trama SET
+                            while(!sentUA){ //Espera pela trama SET
                                 if(state==1){
                                     bytesRead = readFrame(fd,buff,RECEIVER,1,0);
 									error = ((buff[3]!=(buff[1]^buff[2]))|| buff[2]!=C_SET) ? 1 : 0;
@@ -199,7 +201,6 @@ int llopen(int fd, unsigned char mode, int state){
                                 
                                 if (error) {
                                     printf("Received an invalid frame\n");
-                                    continue;
                                 }else {//Envia resposta UA
                                     msg[2] = C_UA;
                                     msg[3] = A^C_UA;
@@ -209,7 +210,7 @@ int llopen(int fd, unsigned char mode, int state){
 									else bytesWritten = write(fd,msg,5); 
 										
                                     if(tt->debug) printf("Receiver UA: %d bytes sent\n",bytesWritten);
-                                    break;
+                                    sentUA = 1;
                                 }
                                 state = 1;
                                 
@@ -348,13 +349,11 @@ int destuffing( unsigned char *buff, unsigned char *buffDestuff){ //Funciona
 			buffDestuff[j]=FLAG_RCV;
 			i=i+2;
 			j++;		
-		}
-		else if(buff[i]==ESCAPE && buff[i+1] == ESCAPE2){ //OK
+		}else if(buff[i]==ESCAPE && buff[i+1] == ESCAPE2){ //OK
 			buffDestuff[j]=ESCAPE;
 			i=i+2;
 			j++;		
-		}
-		else{ //OK
+		}else{ //OK
 			buffDestuff[j]=buff[i];
 			i++;
 			j++;
