@@ -22,6 +22,7 @@ typedef struct linkLayer {
 	unsigned int timeout; //Valor do temporizador
 	unsigned int numTransmissions; //Numero Tentativas em caso de falha
 	char frame[MAX_SIZE]; //Trama
+	long time_elapsed;
 	struct termios oldtio,newtio; //Struct to save old and new termios
 } linkLayer;
 

@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/time.h>
 
 #include "linklayer.h"
 #include "alarm.h"
@@ -40,7 +41,7 @@ const int C_DISC = 0x0b;
 
 linkLayer* ll;
 
-int error_UA = 1;
+int error_UA = 0;
 
 int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned int timeout,unsigned int numTransmissions, int max_size){
 	ll = (linkLayer*) malloc(sizeof(linkLayer));
@@ -49,7 +50,8 @@ int initLinkLayer(char* port,int baudRate,unsigned int sequenceNumber,unsigned i
 	ll->sequenceNumber = sequenceNumber;
 	ll->timeout = timeout;
 	ll->numTransmissions = numTransmissions;
-	ll->max_size = max_size;
+    ll->max_size = max_size;
+    ll->time_elapsed = 0;
 	return 1;
 }
 
@@ -374,7 +376,15 @@ int llread(int fd,unsigned char *buffer){
 	unsigned char buff_destuff[ll->max_size-5];  //para receber campo de dados + BCC
 	unsigned char RR[5] = {FLAG_RCV, A, C_RR_0, A^C_RR_0, FLAG_RCV};
     unsigned char REJ[5] = {FLAG_RCV, A, C_REJ_0, A^C_REJ_0, FLAG_RCV};
-	int tam = 1, state=1, i = 0, length = 0;
+    int tam = 1, state=1, i = 0, length = 0;
+
+    //Para contar tempo
+	long start,end;
+	struct timeval timecheck;
+    
+    //Começar a contar tempo
+    gettimeofday(&timecheck,NULL);
+    start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
 
 	while(state!=5){
 		//  printf("\nSTATE %d - llread\n",state);
@@ -484,8 +494,17 @@ int llread(int fd,unsigned char *buffer){
                     
             default:
                     break;
-			}
-		}    
+		}
+    }    
+    
+    //Fim da contagem do tempo
+    gettimeofday(&timecheck,NULL);
+    end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+
+    printf("%ld milliseconds elapsed\n", (end-start));    
+
+    ll->time_elapsed += (end-start);
+
 	return tam-1;
 }
 
@@ -493,31 +512,6 @@ int llread(int fd,unsigned char *buffer){
 /*--------------------------------TRANSMITTER--------------------------------------*/
 /*---------------------------------------------------------------------------------*/
 
-/*int stuffing(unsigned char *data, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
-	int i = 0, j = 0;
-
-	for(i=0;i<length;i++){ 
-		if(data[i] == FLAG_RCV){ 
-			stuffedBuffer[j++] = ESCAPE;
-            stuffedBuffer[j++]	= ESCAPE1;
-		}else if(data[i] == ESCAPE){ 
-			stuffedBuffer[j++] = ESCAPE;
-            stuffedBuffer[j++]	= ESCAPE2;
-		}else
-			stuffedBuffer[j++] = data[i]; 
-    }
-    
-    if(BCC2 == FLAG_RCV){
-        stuffedBuffer[j++] = ESCAPE;
-        stuffedBuffer[j++]	= ESCAPE1;
-    }else if(BCC2 == ESCAPE){
-        stuffedBuffer[j++] = ESCAPE;
-        stuffedBuffer[j++]	= ESCAPE2;
-    }else
-        stuffedBuffer[j++] = data[i]; 
-
-	return j;	 
-}*/
 int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuffer, int length){ //falta verificar com BCC2
 	int i = 0, j = 0;
 
@@ -526,13 +520,11 @@ int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuff
 			stuffedBuffer[j] = ESCAPE;
 			stuffedBuffer[j+1]	= ESCAPE1;
 			j = j + 2;
-		}
-		else if(buff[i] == ESCAPE){ //OK
+		}else if(buff[i] == ESCAPE){ //OK
 			stuffedBuffer[j] = ESCAPE;
 			stuffedBuffer[j+1]	= ESCAPE2;
 			j = j + 2;
-		}
-		else{ //OK
+		}else{ //OK
 			stuffedBuffer[j] = buff[i]; 
 			j++;
 		}		
@@ -541,13 +533,11 @@ int stuffing(unsigned char *buff, unsigned char BCC2, unsigned char *stuffedBuff
         stuffedBuffer[j] = ESCAPE;
         stuffedBuffer[j+1]    = ESCAPE1;
         j = j + 2;
-    }
-    else if(BCC2 == ESCAPE){
+    }else if(BCC2 == ESCAPE){
         stuffedBuffer[j] = ESCAPE;
         stuffedBuffer[j+1]    = ESCAPE2;
         j = j + 2;
-    }
-    else{
+    }else{
         stuffedBuffer[j] = BCC2;
         j++;
     }
