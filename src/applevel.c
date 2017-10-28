@@ -35,7 +35,7 @@ int numberOfOctets(int number){  //determina a quantidade de octetos necessário
     return n;
 }
 
-int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned char C){  //constroi pacote de controlo em buffer a partir de fileSize, fileName C
+int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned char *hash, unsigned char C){  //constroi pacote de controlo em buffer a partir de fileSize, fileName C
     int i = 0;
     int j = 0;
     int exp = 0;
@@ -69,16 +69,27 @@ int controlPacket(unsigned char *buffer, int fileSize, char *fileName, unsigned 
         i++;
     }
     
+    buffer[i] = 0x02; //hash flag
+    i++;
+    
+    buffer[i] = (char)32; //hash lenght
+    i++;
+    
+    for(j=0; j<32; j++){ //copia hash
+        buffer[i] = hash[j];
+        i++;
+    }
+    
     return i; //retorna tamanho do pacote
   
     
 }
 
-int sendStartPacket(int fd,int fileSize, char *fileName){ //envia START packet
+int sendStartPacket(int fd,int fileSize, char *fileName, unsigned char *hash){ //envia START packet
     
     unsigned char buffer[DATA_LEN]; //limite de octetos no buffer é igual ao máximo de dados que podem ser enviados
     
-    int size = controlPacket(buffer, fileSize, fileName, 0x02); //C = 0x02 -> START
+    int size = controlPacket(buffer, fileSize, fileName, hash, 0x02); //C = 0x02 -> START
     
     if(llwrite(fd, buffer, size) < 0 ){ //envia
         printf("llwrite() retornou valor negativo\n");
@@ -88,11 +99,11 @@ int sendStartPacket(int fd,int fileSize, char *fileName){ //envia START packet
     return size; //retorna tamanho do pacote
 }
 
-int sendEndPacket(int fd, int fileSize,char *fileName){  //envia END packet
+int sendEndPacket(int fd, int fileSize,char *fileName, unsigned char *hash){  //envia END packet
     
     unsigned char buffer[DATA_LEN]; //limite de octetos no buffer é igual ao máximo de dados que podem ser enviados
     
-    int size = controlPacket(buffer, fileSize, fileName, 0x03); //C= = 0x03 -> END
+    int size = controlPacket(buffer, fileSize, fileName, hash , 0x03); //C= = 0x03 -> END
     
     if(llwrite(fd, buffer, size) < 0 ){ //envia
         printf("llwrite() retornou valor negativo\n");
@@ -131,7 +142,7 @@ FILE *openFileTransmmiter(char *pathToFile){ //abre ficheiro com permissoes de l
 }
 
 FILE *openFileReceiver(char *pathToFile){ //abre ficheiro com permissoes de escrita em modo binário
-    FILE *file = fopen(pathToFile, "wb");
+    FILE *file = fopen(pathToFile, "w+b");
     return file;
 }
 
@@ -267,7 +278,7 @@ int getFileSize(unsigned char *buff, int sizeBuff){ //determina tamanho do fiche
     return fileSize;
 }
 
-int receiveStart(int fd,char *fileName){ //espera pelo pacote START sem timeout -> bloqueia
+int receiveStart(int fd,char *fileName, unsigned char *hash){ //espera pelo pacote START sem timeout -> bloqueia
     int tamanho = 0;
     int i = 0;
     int j = 0;
@@ -300,6 +311,20 @@ int receiveStart(int fd,char *fileName){ //espera pelo pacote START sem timeout 
                     i++;
                 }
                 fileName[j] = 0; //adiciona '\0' para que seja uma string válida
+                
+                if(packet[i] != 0x02){ //não vem hash
+                    printf("Queriamos que o 3º parametro fosse a hash mas não chegou isso.\n");
+                    return -1;
+                }
+                i++;
+                
+                paramLen = packet[i];
+                i++;
+                
+                for(j = 0; j<paramLen; j++){
+                    hash[j] = packet[i];
+                    i++;
+                }
             }
             break;
         }

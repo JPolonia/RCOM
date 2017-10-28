@@ -37,6 +37,9 @@ int main(int argc, char** argv)
     unsigned int bytesReadSHA = 0;
     unsigned char bufferSHA[1024];
     unsigned char hash[32];
+    unsigned char hash_received[32];
+    int i = 0;
+    int erro_hash = 0;
 
 	//Para contar tempo
 	long start,end;
@@ -101,12 +104,6 @@ int main(int argc, char** argv)
         }
         sha256_final(&sha, hash);
         rewind(f);
-        
-        //teste
-        printf("\n");
-        for (int idx=0; idx < 32; idx++)
-            printf("%02x",hash[idx]);
-        printf("\n");
 	
 		//Começar a contar tempo
 		gettimeofday(&timecheck,NULL);
@@ -118,7 +115,7 @@ int main(int argc, char** argv)
             return 0;
         }
     
-        if(sendStartPacket(fd, fileSize, fileName) < 0){
+        if(sendStartPacket(fd, fileSize, fileName, hash) < 0){
             fclose(f);
             printf("Erro ao enviar START packet\n");
             return 0;
@@ -132,51 +129,41 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        if(sendEndPacket(fd, fileSize, fileName) < 0){
+        if(sendEndPacket(fd, fileSize, fileName, hash) < 0){
             fclose(f);
             printf("Erro ao enviar END packet\n");
             return 0;
         }
 
-		
-		
-        
         fclose(f);
         
         if(llclose(fd, TRANSMITTER)<0){
             printf("llclose() falhou\n");
         }
 
-		printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
-
 		//Fim da contagem do tempo
 		gettimeofday(&timecheck,NULL);
 		end = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
 	   
+        printf("File size = %d\nTransmitted %d bytes\n", fileSize, bytesTransmitted);
+        
         printf("%ld milliseconds elapsed\n", (end-start));
         printf("ll->time_elapsed = %ld milliseconds \n", ll->time_elapsed);
 		
 	}
 	else if(mode == RECEIVER){
 
-		//Começar a contar tempo
-		start = time(NULL);
-
         if(llopen(fd, RECEIVER,1) < 0){
             printf("llopen() falhou\n");
             sleep(1);
             return 0;
         }
-    
-        //printf("llopen() OK\n");
         
-        fileSize = receiveStart(fd, fileName); //espera por START e guarda tamanho e nome
+        fileSize = receiveStart(fd, fileName, hash_received); //espera por START e guarda tamanho, nome e hash
         if(fileSize < 1){
             printf("Erro ao receber START packet\n");
             return 0;
         }
-        
-        //printf("receiveStart() OK\n");
         
         f = openFileReceiver(fileName); //cria ficheiro
         if (f == NULL) {
@@ -193,14 +180,28 @@ int main(int argc, char** argv)
             return 0;
         }
         
-        fclose(f);
-        
         if(llclose(fd, RECEIVER)<0){
             printf("llclose() falhou\n");
         }
         
+        //calcula hash localmente
+        rewind(f);
+        while(bytesReadSHA = fread(bufferSHA, 1, 1023, f), bytesReadSHA != 0){
+            sha256_update(&sha, bufferSHA, bytesReadSHA);
+        }
+        sha256_final(&sha, hash);
+        fclose(f);
+        
         printf("File size = %d\n", fileSize); //para confirmar que chegou tudo
         printf("Received %d bytes\n", bytesReceived);
+        
+        for(i=0;i<32;i++){ //veririca se hashes coicidem
+            if(hash[i] != hash_received[i]){
+                erro_hash = 1;
+            }
+        }
+        if(erro_hash) printf("Hashes received and calculated are different!\n");
+        else printf("Hashes received and calculated are the same!\n");
 
 	}
 
