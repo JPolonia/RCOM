@@ -12,6 +12,7 @@
 #include "alarm.h"
 #include "applevel.h"
 #include "testes.h"
+#include "sha256.h"
 
 #define ACTIVE 1
 
@@ -33,6 +34,9 @@ int main(int argc, char** argv)
     FILE *f;
     int bytesReceived = 0;
     int bytesTransmitted = 0;
+    unsigned int bytesReadSHA = 0;
+    unsigned char bufferSHA[1024];
+    unsigned char hash[32];
 
 	//Para contar tempo
 	long start,end;
@@ -66,6 +70,11 @@ int main(int argc, char** argv)
     //Initialize alarm
 	initAlarm();
     
+    //Initialize sha256 struct
+    SHA256_CTX sha;
+    sha256_init(&sha);
+    
+    
     mode = (strcmp("TRANSMITTER", argv[2])) ? RECEIVER : TRANSMITTER;
 
 	if(mode == TRANSMITTER){
@@ -74,16 +83,6 @@ int main(int argc, char** argv)
         if(scanf("%s", fileName) < 0){
             printf("Erro em scanf()\n");
             return -1;
-        }
-	
-		//Começar a contar tempo
-		gettimeofday(&timecheck,NULL);
-		start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
-
-        if(llopen(fd, TRANSMITTER,1) < 0 ){
-            printf("llopen() falhou\n");
-            sleep(1);
-            return 0;
         }
         
         f = openFileTransmmiter(fileName); //abre ficheiro
@@ -96,6 +95,29 @@ int main(int argc, char** argv)
         fileSize = ftell(f);
         rewind(f);
         
+        //calcula sha256
+        while(bytesReadSHA = fread(bufferSHA, 1, 1023, f), bytesReadSHA != 0){
+            sha256_update(&sha, bufferSHA, bytesReadSHA);
+        }
+        sha256_final(&sha, hash);
+        rewind(f);
+        
+        //teste
+        printf("\n");
+        for (int idx=0; idx < 32; idx++)
+            printf("%02x",hash[idx]);
+        printf("\n");
+	
+		//Começar a contar tempo
+		gettimeofday(&timecheck,NULL);
+		start = (long)timecheck.tv_sec * 1000 + (long)timecheck.tv_usec / 1000;
+
+        if(llopen(fd, TRANSMITTER,1) < 0 ){
+            printf("llopen() falhou\n");
+            sleep(1);
+            return 0;
+        }
+    
         if(sendStartPacket(fd, fileSize, fileName) < 0){
             fclose(f);
             printf("Erro ao enviar START packet\n");
