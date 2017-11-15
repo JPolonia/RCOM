@@ -78,11 +78,11 @@ int main(int argc, char* argv[]){
     
     
     char resposta[1000];
-    bytesReceived = recv(s, resposta, 10000, 0);
+    bytesReceived = recv(s, resposta, 100, 0);
     assert(bytesReceived > 0);
     printf("\n\n\nReceived: %s\n\n\n", resposta);
     
-    char *msg = "user anonymous";
+    char *msg = "USER anonymous\r\n";
     bytesSent = send(s, msg, strlen(msg), 0);
     assert(bytesSent == strlen(msg));
     printf("\n%d bytes sent!\n", bytesSent);
@@ -90,7 +90,30 @@ int main(int argc, char* argv[]){
     bytesReceived = recv(s, resposta, 100, 0);
     assert(bytesReceived > 0);
     printf("\n\n\nReceived: %s\n\n\n", resposta);
-    bytesReceived = recv(s, resposta, 100, 0);
+
+    char *msg2 = "PASS up201428392@fe.up.pt\r\n";
+    bytesSent = send(s, msg2, strlen(msg2), 0);
+    assert(bytesSent == strlen(msg2));
+    printf("\n%d bytes sent!\n", bytesSent);
+
+char *msg3 = "PASV\r\n";
+    bytesSent = send(s, msg3, strlen(msg3), 0);
+    assert(bytesSent == strlen(msg3));
+    printf("\n%d bytes sent!\n", bytesSent);
+
+    bytesReceived = recv(s, resposta, 1000, 0);
+    assert(bytesReceived > 0);
+    printf("\n\n\nReceived: %s\n\n\n", resposta);
+ bytesReceived = recv(s, resposta, 1000, 0);
+    assert(bytesReceived > 0);
+    printf("\n\n\nReceived: %s\n\n\n", resposta);
+ bytesReceived = recv(s, resposta, 1000, 0);
+    assert(bytesReceived > 0);
+    printf("\n\n\nReceived: %s\n\n\n", resposta);
+bytesReceived = recv(s, resposta, 1000, 0);
+    assert(bytesReceived > 0);
+    printf("\n\n\nReceived: %s\n\n\n", resposta);
+bytesReceived = recv(s, resposta, 1000, 0);
     assert(bytesReceived > 0);
     printf("\n\n\nReceived: %s\n\n\n", resposta);
     
@@ -109,6 +132,7 @@ int main(int argc, char* argv[]){
     free(host);
     free(urlPath);
     
+	return 0;
 }
 
 int getArgs(char* arg, char** user, char** password, char** host, char** urlPath){
