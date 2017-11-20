@@ -14,6 +14,12 @@
 
 #include <assert.h>
 
+#define MAX_DIR_CHANGES 20
+#define ACK_LEN 1000
+#define MAX_CMD_LEN 100
+
+int getDirs(char* path, char **dirs, int maxSteps);
+
 int establishDataConnection(char* host, char* port, struct addrinfo **servinfo_data);
 
 int sendCommand(int socket, char* msg);
@@ -26,6 +32,8 @@ int getLine(int socket, char* ack, int buffSize); //recebe resposta do servidor
 
 int main(int argc, char* argv[]){
     
+    char cmd[MAX_CMD_LEN]; //string to construct commands
+ 
     int s; //socket
     
     int s_data; //socket for data
@@ -38,6 +46,8 @@ int main(int argc, char* argv[]){
     char *user = NULL, *password = NULL, *host = NULL, *urlPath = NULL; //pointers to hold args
     char *arg; //pointer to hold duplicate of argv[1]
     
+    char *dirs[MAX_DIR_CHANGES]; //string array to hold different directories that have to be changed to get to the wanted file
+    
     if(argc != 2){
         printf("Usage: ./download ftp://...\n");
         return -1;
@@ -45,6 +55,11 @@ int main(int argc, char* argv[]){
     arg = strdup(argv[1]);
     if(getArgs(arg, &user, &password, &host, &urlPath) < 0 ){
         printf("Aborting, invalid URL!\n");
+        return -1;
+    }
+    
+    int steps = getDirs(urlPath, dirs, MAX_DIR_CHANGES);
+    if(steps < 0){
         return -1;
     }
     
@@ -66,6 +81,10 @@ int main(int argc, char* argv[]){
     if(host != NULL) printf("Host: %s\n", host);
     if(urlPath != NULL) printf("Url Path: %s\n", urlPath);
     printf("\n\n\n");
+    
+    
+    
+    
     
     memset(&hints, 0, sizeof hints); // make sure the struct is empty
     hints.ai_family = AF_INET;     // ipv4 only
@@ -95,39 +114,50 @@ int main(int argc, char* argv[]){
     status = connect(s, servinfo->ai_addr, servinfo->ai_addrlen);
     assert(status != -1);
     
-    char resposta[1000];
+    char resposta[ACK_LEN];
     
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
     
-    sendCommand(s, "USER anonymous\r\n");
+    strcpy(cmd, "USER ");
+    sendCommand(s, strcat(strcat(cmd, user), "\r\n"));
     
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
     
-    sendCommand(s, "PASS example@mail.com\r\n");
+    strcpy(cmd, "PASS ");
+    sendCommand(s, strcat(strcat(cmd, password), "\r\n"));
     
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
   
-    sendCommand(s, "CWD pub\r\n");
+    /*sendCommand(s, "CWD pub\r\n");
     
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
     
     sendCommand(s, "CWD Docs\r\n");
     
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
 
     sendCommand(s, "CWD 5DPO\r\n");
     
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
+    getLine(s, resposta, ACK_LEN);
+    printf("< %s\n\n", resposta);*/
     
-    sendCommand(s, "PASV\r\n");
+    int i;
+    for(i=0; i<steps-1; i++){ //navega até diretório que contem ficheiro desejado
+        strcpy(cmd, "CWD ");
+        sendCommand(s, strcat(strcat(cmd, dirs[i]), "\r\n"));
+        
+        getLine(s, resposta, ACK_LEN);
+        printf("< %s\n\n", resposta);
+    }
     
-    getLine(s, resposta, 1000);
+    sendCommand(s, "PASV\r\n"); //envia comando PASV
+    
+    getLine(s, resposta, ACK_LEN); //resposta contem porta a que devemos ligar
     printf("< %s\n\n", resposta);
     
     int port = getDataPort(resposta);
@@ -136,7 +166,7 @@ int main(int argc, char* argv[]){
     
     printf("Port for data connection is %s\n\n", s_port);
     
-    /*//data connection
+    //data connection
     struct addrinfo *servinfo_data;
     
     
@@ -152,70 +182,39 @@ int main(int argc, char* argv[]){
     assert(s != -1);
     
     status = connect(s_data, servinfo_data->ai_addr, servinfo_data->ai_addrlen);
-    assert(status != -1);*/
-    struct addrinfo *servinfo_data;
+    assert(status != -1);
     
-    s_data = establishDataConnection(host, s_port, &servinfo_data);
+    //connection made
+    
+    strcpy(cmd, "RETR ");
+    sendCommand(s, strcat(strcat(cmd, dirs[steps-1]), "\r\n"));
     
     
-    sendCommand(s, "NLST\r\n");
+    //sendCommand(s, "NLST\r\n");
     
     getLine(s, resposta, 1000);
     printf("< %s\n\n", resposta);
     
+    
+    FILE* f = fopen(dirs[steps-1], "wb");
+    assert(f != NULL);
+    
     char c;
     while(recv(s_data, &c, 1, MSG_DONTWAIT)!=0){
-        printf("%c", c);
+        //printf("%c", c);
+        fwrite(&c, 1, 1, f);
     }
     
-    /*
-    //:::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    char resposta[1000];
-    bytesReceived = recv(s, resposta, 100, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
+    fclose(f);
     
-    char *msg = "USER anonymous\r\n";
-    bytesSent = send(s, msg, strlen(msg), 0);
-    assert(bytesSent == strlen(msg));
-    printf("\n%d bytes sent!\n", bytesSent);
+    status = close(s_data); // fecha socket dados
+    assert(status != -1);
     
-    bytesReceived = recv(s, resposta, 100, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
-
-    char *msg2 = "PASS up201428392@fe.up.pt\r\n";
-    bytesSent = send(s, msg2, strlen(msg2), 0);
-    assert(bytesSent == strlen(msg2));
-    printf("\n%d bytes sent!\n", bytesSent);
-
-char *msg3 = "PASV\r\n";
-    bytesSent = send(s, msg3, strlen(msg3), 0);
-    assert(bytesSent == strlen(msg3));
-    printf("\n%d bytes sent!\n", bytesSent);
-
-    bytesReceived = recv(s, resposta, 1000, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
- bytesReceived = recv(s, resposta, 1000, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
- bytesReceived = recv(s, resposta, 1000, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
-bytesReceived = recv(s, resposta, 1000, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
-bytesReceived = recv(s, resposta, 1000, 0);
-    assert(bytesReceived > 0);
-    printf("\n\n\nReceived: %s\n\n\n", resposta);
-    
-    */
+    freeaddrinfo(servinfo_data); //desaloca memória
     
     
     
-    
-    status = close(s); // fecha socket
+    status = close(s); // fecha socket controlo
     assert(status != -1);
     
     freeaddrinfo(servinfo); //desaloca memória
@@ -225,31 +224,42 @@ bytesReceived = recv(s, resposta, 1000, 0);
     free(host);
     free(urlPath);
     
+    for(i=0;i<steps;i++){
+        free(dirs[i]);
+    }
+    
 	return 0;
 }
 
-int establishDataConnection(char* host, char* port, struct addrinfo **servinfo_data){
-    int status = 0;
-    int socket = 0;
-    
-    struct addrinfo hints;
-    
-    memset(&hints, 0, sizeof hints); // make sure the struct is empty
-    hints.ai_family = AF_INET;     // ipv4 only
-    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
-    hints.ai_flags = AI_PASSIVE;
-    
-    status = getaddrinfo(host, port, &hints, servinfo_data);
-    assert(status == 0);
-    
-    socket = socket(*servinfo_data->ai_family, *servinfo_data->ai_socktype, *servinfo_data->ai_protocol);
-    assert(socket != -1);
-    
-    status = connect(s_data, *servinfo_data->ai_addr, *servinfo_data->ai_addrlen);
-    assert(status != -1);
-    
-    return socket;
+int getDirs(char* path, char **dirs, int maxSteps){
+    int i = 0;
+    int j = 0;
+    int nsteps = 0;
+    char *pathdup = strdup(path);
+    while(1){
+        if(pathdup[i] == '/'){
+            pathdup[i] = '\0';
+            dirs[nsteps] = strdup(pathdup+j);
+            j=i+1;
+            nsteps++;
+        }
+        else if(pathdup[i] == '\0'){
+            dirs[nsteps] = strdup(pathdup+j);
+            nsteps++;
+            break;
+        }
+        if(nsteps == maxSteps){
+            printf("Url Path can't have more that %d dir jumps\n", maxSteps-1);
+            return -1;
+        }
+        i++;
+    }
+    free(pathdup);
+    return nsteps;
 }
+
+
+
 
 int sendCommand(int socket, char* msg){
     int bytesSent = send(socket, msg, strlen(msg), 0);
@@ -358,7 +368,7 @@ int getArgs(char* arg, char** user, char** password, char** host, char** urlPath
                     tmp[i] = '\0';
                     *host = strdup(tmp);
                     tmp = tmp+i+1;
-                    for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '/' && tmp[i] != '\0'; i++);
+                    for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '\0'; i++);
                     if(tmp[i] != '\0'){
                         return -1;
                     }
@@ -381,7 +391,7 @@ int getArgs(char* arg, char** user, char** password, char** host, char** urlPath
                 tmp[i] = '\0';
                 *host = strdup(tmp);
                 tmp = tmp+i+1;
-                for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '/' && tmp[i] != '\0'; i++);
+                for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '\0'; i++);
                 if(tmp[i] != '\0'){
                     return -1;
                 }
@@ -395,7 +405,7 @@ int getArgs(char* arg, char** user, char** password, char** host, char** urlPath
             tmp[i] = '\0';
             *host = strdup(tmp);
             tmp = tmp+i+1;
-            for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '/' && tmp[i] != '\0'; i++);
+            for(i=0; tmp[i] != ':' && tmp[i] != '@' && tmp[i] != '\0'; i++);
             if(tmp[i] != '\0'){
                 return -1;
             }
