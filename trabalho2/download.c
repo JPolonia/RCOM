@@ -14,6 +14,10 @@
 
 #include <assert.h>
 
+int establishDataConnection(char* host, char* port, struct addrinfo **servinfo_data);
+
+int sendCommand(int socket, char* msg);
+
 int getDataPort(char* buff);
 
 int getArgs(char* arg, char** user, char** password, char** host, char** urlPath); //gets args from argv
@@ -21,8 +25,6 @@ int getArgs(char* arg, char** user, char** password, char** host, char** urlPath
 int getLine(int socket, char* ack, int buffSize); //recebe resposta do servidor
 
 int main(int argc, char* argv[]){
-    
-    int bytesSent = 0;
     
     int s; //socket
     
@@ -94,29 +96,36 @@ int main(int argc, char* argv[]){
     assert(status != -1);
     
     char resposta[1000];
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
-    
-    char *msg = "USER anonymous\r\n";
-    bytesSent = send(s, msg, strlen(msg), 0);
-    assert(bytesSent == strlen(msg));
-    printf("> %s\n", msg);
     
     getLine(s, resposta, 1000);
     printf("< %s\n\n", resposta);
     
-    char *msg2 = "PASS example@mail.com\r\n";
-    bytesSent = send(s, msg2, strlen(msg2), 0);
-    assert(bytesSent == strlen(msg2));
-    printf("> %s\n", msg2);
+    sendCommand(s, "USER anonymous\r\n");
     
     getLine(s, resposta, 1000);
     printf("< %s\n\n", resposta);
     
-    char *msg3 = "PASV\r\n";
-    bytesSent = send(s, msg3, strlen(msg3), 0);
-    assert(bytesSent == strlen(msg3));
-    printf("> %s\n", msg3);
+    sendCommand(s, "PASS example@mail.com\r\n");
+    
+    getLine(s, resposta, 1000);
+    printf("< %s\n\n", resposta);
+  
+    sendCommand(s, "CWD pub\r\n");
+    
+    getLine(s, resposta, 1000);
+    printf("< %s\n\n", resposta);
+    
+    sendCommand(s, "CWD Docs\r\n");
+    
+    getLine(s, resposta, 1000);
+    printf("< %s\n\n", resposta);
+
+    sendCommand(s, "CWD 5DPO\r\n");
+    
+    getLine(s, resposta, 1000);
+    printf("< %s\n\n", resposta);
+    
+    sendCommand(s, "PASV\r\n");
     
     getLine(s, resposta, 1000);
     printf("< %s\n\n", resposta);
@@ -127,7 +136,7 @@ int main(int argc, char* argv[]){
     
     printf("Port for data connection is %s\n\n", s_port);
     
-    //data connection
+    /*//data connection
     struct addrinfo *servinfo_data;
     
     
@@ -143,45 +152,13 @@ int main(int argc, char* argv[]){
     assert(s != -1);
     
     status = connect(s_data, servinfo_data->ai_addr, servinfo_data->ai_addrlen);
-    assert(status != -1);
-    /*
-    char *msg5 = "CWD fromao\r\n";
-    bytesSent = send(s, msg5, strlen(msg5), 0);
-    assert(bytesSent == strlen(msg5));
-    printf("> %s\n", msg5);
+    assert(status != -1);*/
+    struct addrinfo *servinfo_data;
     
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
+    s_data = establishDataConnection(host, s_port, &servinfo_data);
     
-    char *msg6 = "CWD group\r\n";
-    bytesSent = send(s, msg6, strlen(msg6), 0);
-    assert(bytesSent == strlen(msg6));
-    printf("> %s\n", msg6);
     
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
-    
-    char *msg7 = "CWD Deec\r\n";
-    bytesSent = send(s, msg7, strlen(msg7), 0);
-    assert(bytesSent == strlen(msg7));
-    printf("> %s\n", msg7);
-    
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
-    
-    char *msg8 = "CWD hsm\r\n";
-    bytesSent = send(s, msg8, strlen(msg8), 0);
-    assert(bytesSent == strlen(msg8));
-    printf("> %s\n", msg8);
-    
-    getLine(s, resposta, 1000);
-    printf("< %s\n\n", resposta);
-    */
-    
-    char *msg4 = "NLST\r\n";
-    bytesSent = send(s, msg4, strlen(msg4), 0);
-    assert(bytesSent == strlen(msg4));
-    printf("> %s\n", msg4);
+    sendCommand(s, "NLST\r\n");
     
     getLine(s, resposta, 1000);
     printf("< %s\n\n", resposta);
@@ -250,6 +227,37 @@ bytesReceived = recv(s, resposta, 1000, 0);
     
 	return 0;
 }
+
+int establishDataConnection(char* host, char* port, struct addrinfo **servinfo_data){
+    int status = 0;
+    int socket = 0;
+    
+    struct addrinfo hints;
+    
+    memset(&hints, 0, sizeof hints); // make sure the struct is empty
+    hints.ai_family = AF_INET;     // ipv4 only
+    hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
+    hints.ai_flags = AI_PASSIVE;
+    
+    status = getaddrinfo(host, port, &hints, servinfo_data);
+    assert(status == 0);
+    
+    socket = socket(*servinfo_data->ai_family, *servinfo_data->ai_socktype, *servinfo_data->ai_protocol);
+    assert(socket != -1);
+    
+    status = connect(s_data, *servinfo_data->ai_addr, *servinfo_data->ai_addrlen);
+    assert(status != -1);
+    
+    return socket;
+}
+
+int sendCommand(int socket, char* msg){
+    int bytesSent = send(socket, msg, strlen(msg), 0);
+    assert(bytesSent == strlen(msg));
+    printf("> %s\n", msg);
+    return 0;
+}
+
 
 int getDataPort(char* buff){
     int i=0;
