@@ -154,6 +154,11 @@ int main(int argc, char* argv[]){
         getLine(s, resposta, ACK_LEN);
         printf("< %s\n\n", resposta);
     }
+
+	sendCommand(s, "TYPE I\r\n"); //envia comando TYPE IMAGE, para mudar modo 
+    
+    getLine(s, resposta, ACK_LEN); //resposta contem porta a que devemos ligar
+    printf("< %s\n\n", resposta);
     
     sendCommand(s, "PASV\r\n"); //envia comando PASV
     
