@@ -18,6 +18,8 @@
 #define ACK_LEN 1000
 #define MAX_CMD_LEN 100
 
+int firstCharsEqual(char *ack, char *wantedAck);
+
 int getDirs(char* path, char **dirs, int maxSteps);
 
 int establishDataConnection(char* host, char* port, struct addrinfo **servinfo_data);
@@ -93,7 +95,10 @@ int main(int argc, char* argv[]){
     
     // get ready to connect
     status = getaddrinfo(host, "ftp", &hints, &servinfo);
-    assert(status == 0);
+    if (status != 0) {
+        printf("Could not get address info for control connection!\n");
+        return -1;
+    }
     
     //print ip address
     void *addr;
@@ -105,6 +110,10 @@ int main(int argc, char* argv[]){
     // get file descriptor
     s = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
     assert(s != -1);
+    if (s == -1) {
+        printf("Could not get socket for control connection!\n");
+        return -1;
+    }
     
     
     //não é preciso fazer bind
@@ -112,39 +121,40 @@ int main(int argc, char* argv[]){
     
     //conectar!!
     status = connect(s, servinfo->ai_addr, servinfo->ai_addrlen);
-    assert(status != -1);
+    if (s == -1) {
+        printf("Could not make the control connection!\n");
+        return -1;
+    }
     
     char resposta[ACK_LEN];
     
     getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "220")){
+        printf("Server isn't ready to serve, ACK != 220!\n");
+        return -1;
+    }
+    
     
     strcpy(cmd, "USER ");
     sendCommand(s, strcat(strcat(cmd, user), "\r\n"));
     
     getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "331")){
+        printf("Username not accepted!\n");
+        return -1;
+    }
     
     strcpy(cmd, "PASS ");
     sendCommand(s, strcat(strcat(cmd, password), "\r\n"));
     
     getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
-  
-    /*sendCommand(s, "CWD pub\r\n");
-    
-    getLine(s, resposta, ACK_LEN);
-    printf("< %s\n\n", resposta);
-    
-    sendCommand(s, "CWD Docs\r\n");
-    
-    getLine(s, resposta, ACK_LEN);
-    printf("< %s\n\n", resposta);
-
-    sendCommand(s, "CWD 5DPO\r\n");
-    
-    getLine(s, resposta, ACK_LEN);
-    printf("< %s\n\n", resposta);*/
+    if(!firstCharsEqual(resposta, "230")){
+        printf("Password not accepted!\n");
+        return -1;
+    }
     
     int i;
     for(i=0; i<steps-1; i++){ //navega até diretório que contem ficheiro desejado
@@ -153,17 +163,29 @@ int main(int argc, char* argv[]){
         
         getLine(s, resposta, ACK_LEN);
         printf("< %s\n\n", resposta);
+        if(!firstCharsEqual(resposta, "250")){
+            printf("Could not access specified folder!\n");
+            return -1;
+        }
     }
 
 	sendCommand(s, "TYPE I\r\n"); //envia comando TYPE IMAGE, para mudar modo 
     
     getLine(s, resposta, ACK_LEN); //resposta contem porta a que devemos ligar
     printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "200")){
+        printf("Could not change transfer mode to IMAGE!\n");
+        return -1;
+    }
     
     sendCommand(s, "PASV\r\n"); //envia comando PASV
     
     getLine(s, resposta, ACK_LEN); //resposta contem porta a que devemos ligar
     printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "227")){
+        printf("Could not enter passive mode!\n");
+        return -1;
+    }
     
     int port = getDataPort(resposta);
     char s_port[10];
@@ -181,46 +203,70 @@ int main(int argc, char* argv[]){
     hints.ai_flags = AI_PASSIVE;
     
     status = getaddrinfo(host, s_port, &hints, &servinfo_data);
-    assert(status == 0);
+    if (status != 0) {
+        printf("Could not get address info for data connection!\n");
+        return -1;
+    }
     
     s_data = socket(servinfo_data->ai_family, servinfo_data->ai_socktype, servinfo_data->ai_protocol);
-    assert(s != -1);
+    if (s == -1) {
+        printf("Could not get socket for data connection!\n");
+        return -1;
+    }
     
     status = connect(s_data, servinfo_data->ai_addr, servinfo_data->ai_addrlen);
-    assert(status != -1);
+    if (s == -1) {
+        printf("Could not make the data connection!\n");
+        return -1;
+    }
     
     //connection made
     
     strcpy(cmd, "RETR ");
     sendCommand(s, strcat(strcat(cmd, dirs[steps-1]), "\r\n"));
     
-    
-    //sendCommand(s, "NLST\r\n");
-    
-    getLine(s, resposta, 1000);
+    getLine(s, resposta, ACK_LEN);
     printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "150")){
+        printf("File status NOT OK, failure to download file!\n");
+        return -1;
+    }
     
     
     FILE* f = fopen(dirs[steps-1], "wb");
     assert(f != NULL);
     
     char c;
-    while(recv(s_data, &c, 1, MSG_DONTWAIT)!=0){
+    int ret=0;
+    while(ret = recv(s_data, &c, 1, MSG_DONTWAIT), ret!=0){
         //printf("%c", c);
-        fwrite(&c, 1, 1, f);
+        if(ret == 1) fwrite(&c, 1, 1, f);
     }
     
     fclose(f);
     
+    getLine(s, resposta, ACK_LEN);
+    printf("< %s\n\n", resposta);
+    if(!firstCharsEqual(resposta, "226")){
+        printf("Transfer finished but there was an error!\n");
+        return -1;
+    }
+  
+    printf("\n\nTransfer finished successfully!\n\n");
+    
     status = close(s_data); // fecha socket dados
-    assert(status != -1);
+    if(status == -1){
+        printf("Error closing data socket!\n");
+        return -1;
+    }
     
     freeaddrinfo(servinfo_data); //desaloca memória
-    
-    
-    
+
     status = close(s); // fecha socket controlo
-    assert(status != -1);
+    if(status == -1){
+        printf("Error closing control socket!\n");
+        return -1;
+    }
     
     freeaddrinfo(servinfo); //desaloca memória
     
@@ -234,6 +280,14 @@ int main(int argc, char* argv[]){
     }
     
 	return 0;
+}
+
+int firstCharsEqual(char *ack, char *wantedAck){
+    int i;
+    for(i=0 ; wantedAck[i] != 0; i++){
+        if(ack[i] != wantedAck[i]) return 0;
+    }
+    return 1;
 }
 
 int getDirs(char* path, char **dirs, int maxSteps){
