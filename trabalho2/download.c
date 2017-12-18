@@ -355,7 +355,6 @@ int getLine(int socket, char* buff, int buffSize){
     int i = 0;
     int longmsg = 0;
     int endlongmsg = 0;
-    //int testpos = 0;
     int j = 0;
     while(1){
         byteReceived = recv(socket, &c, 1, MSG_DONTWAIT);
@@ -385,7 +384,8 @@ int getLine(int socket, char* buff, int buffSize){
                     j=0;
                 }
             }
-            if(j >= 3) endlongmsg = 1;
+            if(j == 3) endlongmsg = 1;
+            if(j == 4) endlongmsg = 0;
             i++;
         }
     }
